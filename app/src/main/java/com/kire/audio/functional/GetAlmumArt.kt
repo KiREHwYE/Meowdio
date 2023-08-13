@@ -30,20 +30,20 @@ fun getAlbumart(
     return if (bitmap == null) Uri.parse("android.resource://com.kire.audio/drawable/music_icon") else uri
 }
 
-fun getAlbumartURI(
-    album_id: Long?
-): Uri? {
-
-    var uri: Uri?
-
-    try {
-        val sArtworkUri = Uri
-            .parse("content://media/external/audio/albumart")
-        uri = ContentUris.withAppendedId(sArtworkUri, album_id!!)
-
-    } catch (exception: Exception) {
-        uri = null
-    }
-
-    return uri ?: Uri.parse("android.resource://com.kire.audio/drawable/music_icon")
-}
+//fun getAlbumartURI(
+//    album_id: Long?
+//): Uri? {
+//
+//    var uri: Uri?
+//
+//    try {
+//        val sArtworkUri = Uri
+//            .parse("content://media/external/audio/albumart")
+//        uri = ContentUris.withAppendedId(sArtworkUri, album_id!!)
+//
+//    } catch (exception: Exception) {
+//        uri = null
+//    }
+//
+//    return uri ?: Uri.parse("android.resource://com.kire.audio/drawable/music_icon")
+//}

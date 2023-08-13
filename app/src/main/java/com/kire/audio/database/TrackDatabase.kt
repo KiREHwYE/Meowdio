@@ -7,7 +7,7 @@ import com.kire.audio.models.Track
 
 @Database(
     entities = [Track::class],
-    version = 1
+    version = 2
 )
 @TypeConverters(Converters::class)
 abstract class TrackDatabase : RoomDatabase(){

@@ -35,9 +35,16 @@ android {
     }
 
     buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
+        getByName("release") {
+            release {
+                minifyEnabled = true
+                shrinkResources = true
+            }
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+            )
+
         }
     }
     compileOptions {
@@ -72,8 +79,10 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.constraintlayout:constraintlayout-compose:1.0.1'
     implementation 'androidx.compose.material3:material3:1.2.0-alpha04'
-    implementation "com.google.accompanist:accompanist-permissions:0.20.0"
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.6.1'
+
+    implementation "com.google.accompanist:accompanist-permissions:0.20.0"
+    implementation "com.google.accompanist:accompanist-systemuicontroller:0.31.2-alpha"
 
     implementation "io.coil-kt:coil-compose:2.4.0"
 
@@ -83,7 +92,7 @@ dependencies {
     def room_version = "2.5.0-beta01"
 
     implementation "androidx.room:room-runtime:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
+    ksp "androidx.room:room-compiler:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
     implementation "androidx.room:room-paging:$room_version"
 
@@ -93,8 +102,12 @@ dependencies {
     implementation 'androidx.hilt:hilt-work:1.0.0'
     kapt 'androidx.hilt:hilt-compiler:1.0.0'
 
-    implementation "com.google.dagger:hilt-android:2.44"
-    kapt "com.google.dagger:hilt-compiler:2.44"
+    implementation 'com.google.dagger:hilt-android:2.47'
+    kapt 'com.google.dagger:hilt-compiler:2.47'
+
+
+
+    implementation "androidx.datastore:datastore-preferences:1.1.0-alpha04"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

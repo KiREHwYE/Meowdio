@@ -13,7 +13,7 @@ data class Track(
     val path: String,
     val album_id: Long?,
     val imageUri: Uri?,
-    val date_added: String,
+    val date_added: String?,
     @PrimaryKey
     val id: String
     )

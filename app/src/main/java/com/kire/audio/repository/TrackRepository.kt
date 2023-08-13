@@ -1,4 +1,4 @@
-package com.kire.audio
+package com.kire.audio.repository
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -7,39 +7,43 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.room.Room
+import com.kire.audio.R
 import com.kire.audio.database.TrackDatabase
 import com.kire.audio.functional.getAlbumart
 import com.kire.audio.models.Track
 import kotlinx.coroutines.flow.Flow
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 @SuppressLint("Range")
-class TrackRepository private constructor(context: Context) {
+class TrackRepository @Inject constructor(
+    private val context: Context
+) {
 
     private val database by lazy {
         Room.databaseBuilder(
             context.applicationContext,
             TrackDatabase::class.java,
             "tracks.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     private fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
 
 //    suspend fun getTrack(id: String): Track = database.dao.getTrack(id)
 
-    fun getTracks(): Flow<List<Track>> = database.dao.getTracks()
-
+//    fun getTracks(): Flow<List<Track>> = database.dao.getTracks()
     fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
-
-//    fun getTracksOrderedByDateAdded(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAdded()
-//
-//    fun getTracksOrderedByDurationAdded(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationAdded()
-//
-//    fun getTracksOrderedByTitleAdded(): Flow<List<Track>> = database.dao.getTracksOrderedByTitleAdded()
-//
-//    fun getTracksOrderedByArtistAdded(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistAdded()
-
+    fun getTracksOrderedByDateAddedASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedASC()
+    fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedDESC()
+    fun getTracksOrderedByTitleASC(): Flow<List<Track>> = database.dao.getTracksOrderedByTitleASC()
+    fun getTracksOrderedByTitleDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByTitleDESC()
+    fun getTracksOrderedByArtistASC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistASC()
+    fun getTracksOrderedByArtistDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistDESC()
 
 
 
@@ -73,7 +77,7 @@ class TrackRepository private constructor(context: Context) {
                     cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
 
                 val date_addedC =
-                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED))
+                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED))
 
                 val imageUriC: Uri? = getAlbumart(album_idC, context)
 
@@ -112,24 +116,6 @@ class TrackRepository private constructor(context: Context) {
         tracks.forEach { track ->
             if (!File(track.path).exists())
                 deleteTrack(track)
-        }
-    }
-
-
-    companion object {
-        @Volatile private var INSTANCE: TrackRepository? = null
-
-        fun initialize(context: Context) : TrackRepository{
-            return INSTANCE ?: synchronized(this){
-                TrackRepository(context).also {
-                    INSTANCE = it
-                }
-            }
-        }
-
-        fun get(): TrackRepository {
-            return INSTANCE
-                ?: throw java.lang.IllegalStateException("NoteRepository must be initialized")
         }
     }
 }

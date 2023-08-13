@@ -48,14 +48,14 @@ import com.ramcosta.composedestinations.annotation.Destination
 fun Screen(
     title: String,
     artist: String,
-    uri: Uri?
+    imageUri: Uri?
 ){
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ){
 
-        Background(uri)
+        Background(imageUri)
 
         Column(modifier = Modifier
             .padding(10.dp)
@@ -64,7 +64,7 @@ fun Screen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Header()
-            ShowImage(uri)
+            ShowImage(imageUri)
             TextBlock(title = title, artist = artist)
             FunctionalBlock()
         }
@@ -73,13 +73,13 @@ fun Screen(
 
 @Composable
 fun Background(
-    uri: Uri?
+    imageUri: Uri?
 ){
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data(uri)
+            .data(imageUri)
             .build(),
-        contentDescription = null,
+        contentDescription = "Background image",
         contentScale = ContentScale.Crop,
         colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply{
             setToScale(0.5f,0.5f,0.5f,1f)
@@ -130,13 +130,13 @@ fun Header(){
 
 @Composable
 fun ShowImage(
-    uri: Uri?
+    imageUri: Uri?
 ){
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data(uri)
+            .data(imageUri) 
             .build(),
-        contentDescription = null,
+        contentDescription = "Track Image in foreground",
         contentScale = ContentScale.Crop,
         modifier = Modifier
             .size(340.dp, 340.dp)
