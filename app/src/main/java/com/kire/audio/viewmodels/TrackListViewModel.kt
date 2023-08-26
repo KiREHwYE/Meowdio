@@ -1,6 +1,7 @@
 package com.kire.audio.viewmodels
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kire.audio.repository.TrackRepository
@@ -12,27 +13,26 @@ import com.kire.audio.models.Track
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @HiltViewModel
 class TrackListViewModel @Inject constructor(
     private val dataStore: DataStore,
-    val trackRepository: TrackRepository
+    private val trackRepository: TrackRepository
 ) : ViewModel(){
 
 
     private val _sortType = MutableStateFlow(SortType.DATA_DESC_ORDER)
     val sortType : StateFlow<SortType>
-        get() = _sortType
-
+        get() = _sortType.asStateFlow()
 
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,7 +54,6 @@ class TrackListViewModel @Inject constructor(
 
 
 
-
     fun onEvent(event: SortOptionEvent) {
         when(event){
             is SortOptionEvent.ListTrackSortOption -> {
@@ -66,18 +65,84 @@ class TrackListViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore.saveSortOption(SORT_OPTION_KEY, value.toString())
         }
-    fun readSortOption() : Flow<SortType> =
-        runBlocking {
-            dataStore.readSortOption(SORT_OPTION_KEY)
-        }
-
-
 
 
     fun loadTracksToDatabase(context: Context) = trackRepository.loadTracksToDatabase(context)
     fun deleteTracksFromDatabase(tracks :List<Track>) = trackRepository.deleteTracksFromDatabase(tracks)
 
 
+    private val _searchText = MutableStateFlow("")
+    val searchText: StateFlow<String>
+        get() = _searchText.asStateFlow()
+
+    private val _active = MutableStateFlow(false)
+    val active: StateFlow<Boolean>
+        get() = _active.asStateFlow()
+
+
+    fun onSearchTextChange(text: String) {
+        _searchText.value = text
+    }
+
+    fun onActiveChange(active: Boolean) {
+        _active.value = active
+    }
+
+    private val _searchResult = searchText
+        .combine(_tracks) { text, tracks ->
+            if (text.isBlank())
+                emptyList<Track>()
+            else
+                _tracks.value.filter{
+                    it.doesMatchSearchQuery(text)
+                }
+
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList<Track>()
+        )
+
+    val searchResult : StateFlow<List<Track>>
+        get() = _searchResult
+
+
+    private val _bottomSheetTrackTitle = MutableStateFlow("")
+    val bottomSheetTrackTitle: StateFlow<String>
+        get() = _bottomSheetTrackTitle.asStateFlow()
+
+    private val _bottomSheetTrackArtist = MutableStateFlow("")
+    val bottomSheetTrackArtist: StateFlow<String>
+        get() = _bottomSheetTrackArtist
+
+    private val _bottomSheetTrackImageUri =
+        MutableStateFlow(Uri.parse("android.resource://com.kire.audio/drawable/music_icon"))
+    val bottomSheetTrackImageUri: StateFlow<Uri?>
+        get() = _bottomSheetTrackImageUri
+
+
+    private val _isExpanded: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isExpanded: StateFlow<Boolean>
+        get() = _isExpanded.asStateFlow()
+
+    fun changeIsExpended(isExpanded: Boolean) {
+        _isExpanded.value = isExpanded
+    }
+
+    fun isShown(): Boolean {
+        return _bottomSheetTrackTitle.value != "" && _bottomSheetTrackArtist.value != ""
+    }
+
+    fun sentInfoToBottomSheet(
+        title: String,
+        artist: String,
+        imageUri: Uri?
+    ) {
+        _bottomSheetTrackTitle.value = title
+        _bottomSheetTrackArtist.value = artist
+        _bottomSheetTrackImageUri.value = imageUri
+    }
 
 
     init {

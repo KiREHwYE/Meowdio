@@ -16,4 +16,18 @@ data class Track(
     val date_added: String?,
     @PrimaryKey
     val id: String
-    )
+    ) {
+
+
+    fun doesMatchSearchQuery(query: String): Boolean {
+        val matchingCombinations = listOf(
+            title,
+            artist,
+            "$album"
+        )
+
+        return matchingCombinations.any {
+            it.contains(query, ignoreCase = true)
+        }
+    }
+}

@@ -10,8 +10,8 @@ interface TrackDao {
     @Upsert
     fun upsertTrack(track: Track)
 
-    @Query("SELECT * FROM track")
-    fun getTracks(): Flow<List<Track>>
+//    @Query("SELECT * FROM track")
+//    fun getTracks(): Flow<List<Track>>
 
     @Delete
     fun deleteTrack(track: Track)

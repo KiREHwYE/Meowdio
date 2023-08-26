@@ -3,11 +3,9 @@ package com.kire.audio.repository
 import android.annotation.SuppressLint
 import android.content.Context
 import android.database.Cursor
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.room.Room
-import com.kire.audio.R
 import com.kire.audio.database.TrackDatabase
 import com.kire.audio.functional.getAlbumart
 import com.kire.audio.models.Track
@@ -37,6 +35,7 @@ class TrackRepository @Inject constructor(
 //    suspend fun getTrack(id: String): Track = database.dao.getTrack(id)
 
 //    fun getTracks(): Flow<List<Track>> = database.dao.getTracks()
+
     fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedASC()
     fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedDESC()
@@ -49,9 +48,6 @@ class TrackRepository @Inject constructor(
 
     @SuppressLint("Range")
     fun loadTracksToDatabase(context: Context){
-
-        val bitmapIfNull =
-            BitmapFactory.decodeResource(context.getResources(), R.drawable.music_icon)
 
         val cursor: Cursor? = context.contentResolver?.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -85,14 +81,14 @@ class TrackRepository @Inject constructor(
                     id = idC,
                     title = when {
                         titleC == null -> "No title"
-                        titleC.length > 40 -> titleC.take(40) + "..."
+                        titleC.length > 27 -> titleC.take(27) + "..."
                         else -> titleC
                     },
                     album = albumC,
                     artist = when {
                         artistC == null -> "Unknown artist"
                         artistC == "<unknown>" -> "Unknown artist"
-                        artistC.length > 40 -> artistC.take(40) + "..."
+                        artistC.length > 27 -> artistC.take(27) + "..."
                         else -> artistC
                     },
                     path = pathC,

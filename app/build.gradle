@@ -35,16 +35,48 @@ android {
     }
 
     buildTypes {
-        getByName("release") {
-            release {
-                minifyEnabled = true
-                shrinkResources = true
-            }
+        debug {
+            minifyEnabled false
             proguardFiles(
                     getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro"
             )
-
+            versionNameSuffix = "-debug"
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        debugTest {
+            minifyEnabled true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android.txt"),
+                    "proguard-rules.pro"
+            )
+            versionNameSuffix = "-debugTest"
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            minifyEnabled true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android.txt"),
+                    "proguard-rules.pro"
+            )
+        }
+        beta {
+            minifyEnabled true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android.txt"),
+                    "proguard-rules.pro"
+            )
+            versionNameSuffix = "-beta1"
+        }
+        alpha {
+            minifyEnabled true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android.txt"),
+                    "proguard-rules.pro"
+            )
+            versionNameSuffix = "-alpha1"
         }
     }
     compileOptions {
@@ -89,6 +121,9 @@ dependencies {
     implementation 'io.github.raamcosta.compose-destinations:core:1.9.50'
     ksp 'io.github.raamcosta.compose-destinations:ksp:1.9.50'
 
+    implementation "androidx.paging:paging-runtime:3.1.1"
+    implementation "androidx.paging:paging-compose:1.0.0-alpha16"
+
     def room_version = "2.5.0-beta01"
 
     implementation "androidx.room:room-runtime:$room_version"
@@ -105,7 +140,7 @@ dependencies {
     implementation 'com.google.dagger:hilt-android:2.47'
     kapt 'com.google.dagger:hilt-compiler:2.47'
 
-
+    implementation "androidx.compose.material:material-icons-extended:1.5.0-rc01"
 
     implementation "androidx.datastore:datastore-preferences:1.1.0-alpha04"
 

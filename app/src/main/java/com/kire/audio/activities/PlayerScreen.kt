@@ -1,6 +1,11 @@
 package com.kire.audio.activities
 
 import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.MarqueeAnimationMode
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,19 +18,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PauseCircleFilled
+import androidx.compose.material.icons.rounded.PlayCircleFilled
+import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -36,7 +44,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -102,30 +113,25 @@ fun Header(){
         horizontalArrangement = Arrangement.SpaceBetween)
     {
 
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(
-                Icons.Filled.KeyboardArrowDown,
-                contentDescription = "Close",
-                modifier = Modifier
-                    .size(30.dp)
-                    .alpha(0.8f),
-                tint = Color.White
-            )
-        }
 
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(
-                Icons.Filled.MoreVert,
-                contentDescription = "Settings",
-                modifier = Modifier
-                    .size(30.dp)
-                    .alpha(0.8f),
-                tint = Color.White
-            )
-        }
+        Icon(
+            Icons.Rounded.KeyboardArrowDown,
+            contentDescription = "Close",
+            modifier = Modifier
+                .size(30.dp)
+                .alpha(0.8f),
+            tint = Color.White
+        )
 
+        Icon(
+            Icons.Rounded.MoreVert,
+            contentDescription = "Settings",
+            modifier = Modifier
+                .size(30.dp)
+                .alpha(0.8f),
+            tint = Color.White
+        )
     }
-
 }
 
 @Composable
@@ -145,11 +151,15 @@ fun ShowImage(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TextBlock(
     title: String,
     artist: String
 ){
+
+    var isLoved = remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
 
     Column(modifier = Modifier
         .width(340.dp),
@@ -161,41 +171,54 @@ fun TextBlock(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Column(
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    title,
-                    fontWeight = FontWeight.W500,
-                    fontSize = 22.sp,
-                    color = Color.White,
-                    modifier = Modifier
-                        .alpha(0.8f)
-                )
+            Text(
+                buildAnnotatedString {
+                    withStyle(
+                        style = SpanStyle(
+                            color = Color.White,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) {
+                        append(title)
+                    }
+                    withStyle(
+                        style = SpanStyle(
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.W300
+                        )
+                    ) {
+                        append("\n" + artist)
+                    }
+                },
+                modifier = Modifier
+                    .padding(start = 14.dp)
+                    .fillMaxWidth(0.85f)
+                    .alpha(0.8f)
+                    .basicMarquee(
+                        animationMode = MarqueeAnimationMode.Immediately,
+                        delayMillis = 0
+                    )
+            )
 
-                Text(
-                    artist,
-                    fontWeight = FontWeight.W300,
-                    fontSize = 14.sp,
-                    color = Color.LightGray,
-                    modifier = Modifier
-                        .alpha(0.8f)
-                        .padding(top = 4.dp)
-                )
-            }
-
-            IconButton(onClick = { /*TODO*/ },
-                modifier = Modifier.alpha(0.8f)
-            ) {
-                Icon(
-                    Icons.Filled.FavoriteBorder,
-                    contentDescription = "Favourite",
-                    modifier = Modifier
-                        .size(30.dp)
-                        .alpha(0.8f),
-                    tint = Color.White
-                )
-            }
+            Icon(
+                if (isLoved.value) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                contentDescription = "Favourite",
+                modifier = Modifier
+                    .size(30.dp)
+                    .alpha(0.8f)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+                        if (!isLoved.value)
+                            isLoved.value = true
+                        else
+                            isLoved.value = false
+                    },
+                tint = if (isLoved.value) Color.Red else Color.White
+            )
         }
 
         Slider(
@@ -210,43 +233,61 @@ fun TextBlock(
 fun FunctionalBlock(){
     Row(modifier = Modifier
         .width(340.dp)
-        .padding(bottom = 90.dp),
+        .padding(bottom = 80.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
-        IconButton(onClick = { /*TODO*/ }) {
+
+        val isPlaying = remember { mutableStateOf(false) }
+        val interactionSource = remember { MutableInteractionSource() }
+
+        Icon(
+            Icons.Rounded.Refresh,
+            contentDescription = "RepeatOrShuffle",
+            modifier = Modifier
+                .size(30.dp)
+                .alpha(0.7f),
+            tint = Color.White
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+
             Icon(
-                Icons.Filled.Refresh,
-                contentDescription = "RepeatOrShuffle",
-                modifier = Modifier
-                    .size(30.dp)
-                    .alpha(0.7f),
-                tint = Color.White
-            )
-        }
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(
-                Icons.Filled.KeyboardArrowLeft,
+                Icons.Rounded.SkipPrevious,
                 contentDescription = "Previous",
                 modifier = Modifier
                     .size(40.dp)
                     .alpha(0.8f),
                 tint = Color.White
             )
-        }
-        IconButton(onClick = { /*TODO*/ }) {
+
             Icon(
-                Icons.Filled.PlayArrow,
+                if (isPlaying.value)
+                    Icons.Rounded.PauseCircleFilled
+                else
+                    Icons.Rounded.PlayCircleFilled,
                 contentDescription = "Play",
                 modifier = Modifier
-                    .size(60.dp)
-                    .alpha(0.8f),
+                    .size(70.dp)
+                    .alpha(0.8f)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+                        if (!isPlaying.value)
+                            isPlaying.value = true
+                        else
+                            isPlaying.value = false
+                    },
                 tint = Color.White
             )
-        }
-        IconButton(onClick = { /*TODO*/ }) {
+
+
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.Rounded.SkipNext,
                 contentDescription = "Next",
                 modifier = Modifier
                     .size(40.dp)
@@ -254,15 +295,15 @@ fun FunctionalBlock(){
                 tint = Color.White
             )
         }
-        IconButton(onClick = { /*TODO*/ }) {
-            Icon(
-                Icons.Filled.List,
-                contentDescription = "Playlist",
-                modifier = Modifier
-                    .size(30.dp)
-                    .alpha(0.7f),
-                tint = Color.White,
-            )
-        }
+
+        Icon(
+            Icons.Rounded.PlaylistPlay,
+            contentDescription = "Playlist",
+            modifier = Modifier
+                .size(30.dp)
+                .alpha(0.7f),
+            tint = Color.White,
+        )
+
     }
 }

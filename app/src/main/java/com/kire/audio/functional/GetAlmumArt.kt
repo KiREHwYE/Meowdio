@@ -10,18 +10,23 @@ import android.os.ParcelFileDescriptor
 fun getAlbumart(
     album_id: Long?,
     context: Context
-): Uri {
+): Uri? {
 
     var bitmap: Bitmap? = null
-    lateinit var uri: Uri
+    var uri: Uri? = null
+    var parcelFileDescriptor: ParcelFileDescriptor? = null
 
     try {
         val sArtworkUri = Uri
             .parse("content://media/external/audio/albumart")
-        uri = ContentUris.withAppendedId(sArtworkUri, album_id!!)
-        val parcelFileDescriptor: ParcelFileDescriptor? = context.getContentResolver().openFileDescriptor(uri, "r")
-        if (parcelFileDescriptor != null) {
-            val fileDescriptor = parcelFileDescriptor.fileDescriptor
+        album_id?.let {id ->
+            uri = ContentUris.withAppendedId(sArtworkUri, id)
+        }
+        uri?.let {
+            parcelFileDescriptor = context.getContentResolver().openFileDescriptor(it, "r")
+        }
+        parcelFileDescriptor?.let { descriptor ->
+            val fileDescriptor = descriptor.fileDescriptor
             bitmap = BitmapFactory.decodeFileDescriptor(fileDescriptor)
         }
         parcelFileDescriptor?.close()
@@ -29,21 +34,3 @@ fun getAlbumart(
 
     return if (bitmap == null) Uri.parse("android.resource://com.kire.audio/drawable/music_icon") else uri
 }
-
-//fun getAlbumartURI(
-//    album_id: Long?
-//): Uri? {
-//
-//    var uri: Uri?
-//
-//    try {
-//        val sArtworkUri = Uri
-//            .parse("content://media/external/audio/albumart")
-//        uri = ContentUris.withAppendedId(sArtworkUri, album_id!!)
-//
-//    } catch (exception: Exception) {
-//        uri = null
-//    }
-//
-//    return uri ?: Uri.parse("android.resource://com.kire.audio/drawable/music_icon")
-//}
