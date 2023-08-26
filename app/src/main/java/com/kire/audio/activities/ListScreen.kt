@@ -634,31 +634,6 @@ fun DropDownMenu(
     }
 }
 
-
-//@Composable
-//fun Counter(
-//    tracks: StateFlow<List<Track>>
-//){
-//    Box(
-//        modifier = Modifier.fillMaxSize(),
-//        contentAlignment = Alignment.BottomStart
-//    ) {
-//        Box(
-//            modifier = Modifier
-//                .size(50.dp, 50.dp)
-//                .background(color = Color.Red),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Text(
-//                tracks.collectAsState().value.size.toString(),
-//                fontSize = 20.sp,
-//                color = Color.Cyan
-//            )
-//        }
-//    }
-//}
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBar(
