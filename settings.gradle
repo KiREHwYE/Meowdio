@@ -12,5 +12,16 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        google()
+        jcenter()
+        maven { url 'https://jitpack.io' }
+        maven { url "https://maven.google.com" }
+        mavenCentral()
+    }
+}
 rootProject.name = "Audio"
 include ':app'

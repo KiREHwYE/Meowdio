@@ -14,6 +14,7 @@ data class Track(
     val album_id: Long?,
     val imageUri: Uri?,
     val date_added: String?,
+    var isFavourite: Boolean,
     @PrimaryKey
     val id: String
     ) {

@@ -1,15 +1,23 @@
 package com.kire.audio.repository
 
 import android.annotation.SuppressLint
+
 import android.content.Context
+
 import android.database.Cursor
+
 import android.net.Uri
+
 import android.provider.MediaStore
+
 import androidx.room.Room
+
 import com.kire.audio.database.TrackDatabase
 import com.kire.audio.functional.getAlbumart
 import com.kire.audio.models.Track
+
 import kotlinx.coroutines.flow.Flow
+
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +27,8 @@ import javax.inject.Singleton
 class TrackRepository @Inject constructor(
     private val context: Context
 ) {
+
+
 
     private val database by lazy {
         Room.databaseBuilder(
@@ -30,11 +40,17 @@ class TrackRepository @Inject constructor(
             .build()
     }
 
+
+
+
+
+
     private fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
+    fun getTrack(id: String): Track = database.dao.getTrack(id)
 
-//    suspend fun getTrack(id: String): Track = database.dao.getTrack(id)
+    suspend fun updateIsLoved(track: Track) = database.dao.updateIsLoved(track)
 
-//    fun getTracks(): Flow<List<Track>> = database.dao.getTracks()
+    fun getFavouriteTracks(): Flow<List<Track>> = database.dao.getFavouriteTracks()
 
     fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedASC()
@@ -43,6 +59,13 @@ class TrackRepository @Inject constructor(
     fun getTracksOrderedByTitleDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByTitleDESC()
     fun getTracksOrderedByArtistASC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistASC()
     fun getTracksOrderedByArtistDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistDESC()
+    fun getTracksOrderedByDurationASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationASC()
+    fun getTracksOrderedByDurationDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationDESC()
+
+
+
+
+
 
 
 
@@ -73,7 +96,7 @@ class TrackRepository @Inject constructor(
                     cursor.getLong(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID))
 
                 val date_addedC =
-                    cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED))
+                    File(pathC).lastModified().toString()
 
                 val imageUriC: Uri? = getAlbumart(album_idC, context)
 
@@ -81,32 +104,49 @@ class TrackRepository @Inject constructor(
                     id = idC,
                     title = when {
                         titleC == null -> "No title"
-                        titleC.length > 27 -> titleC.take(27) + "..."
                         else -> titleC
                     },
                     album = albumC,
                     artist = when {
                         artistC == null -> "Unknown artist"
                         artistC == "<unknown>" -> "Unknown artist"
-                        artistC.length > 27 -> artistC.take(27) + "..."
                         else -> artistC
                     },
                     path = pathC,
                     duration = durationC,
                     album_id = album_idC,
                     imageUri = imageUriC,
-                    date_added = date_addedC
+                    date_added = date_addedC,
+                    isFavourite = false
                 )
 
-                if (File(pathC).exists())
-                    upsertTrack(track)
+                if (File(pathC).exists()) {
 
+                    val existingTrack: Track = getTrack(idC)
+
+                    if (
+                        existingTrack != null &&
+                        existingTrack.title == titleC &&
+                        existingTrack.artist == artistC &&
+                        existingTrack.album == albumC &&
+                        existingTrack.album_id == album_idC &&
+                        existingTrack.imageUri == imageUriC &&
+                        existingTrack.duration == durationC &&
+                        existingTrack.date_added == date_addedC &&
+                        existingTrack.path == pathC
+                    )
+                        continue
+
+                    upsertTrack(track)
+                }
 
             } while (cursor.moveToNext())
         }
 
         cursor?.close()
     }
+
+
 
     fun deleteTracksFromDatabase(tracks :List<Track>){
         tracks.forEach { track ->

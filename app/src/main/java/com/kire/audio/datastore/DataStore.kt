@@ -2,6 +2,7 @@ package com.kire.audio.datastore
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import javax.inject.Inject
 import androidx.datastore.preferences.preferencesDataStore
@@ -14,7 +15,7 @@ import kotlinx.coroutines.flow.map
 private val Context.dataStore by preferencesDataStore(name = DATASTORE_NAME)
 
 class DataStore @Inject constructor(
-    private val context: Context
+    context: Context
 ): DataStoreInterface{
 
     private val dataStore = context.dataStore
@@ -29,6 +30,20 @@ class DataStore @Inject constructor(
         val dataStoreKey = stringPreferencesKey(key)
         return dataStore.data.map {
             SortType.valueOf(it[dataStoreKey] ?: "DATA_DESC_ORDER")
+        }
+    }
+
+    override suspend fun saveRepeatMode(key: String, value: Int) {
+        val dataStoreKey = intPreferencesKey(key)
+        dataStore.edit {
+            it[dataStoreKey] = value
+        }
+    }
+
+    override suspend fun readRepeatMode(key: String): Flow<Int> {
+        val dataStoreKey = intPreferencesKey(key)
+        return dataStore.data.map {
+            it[dataStoreKey] ?: 0
         }
     }
 }

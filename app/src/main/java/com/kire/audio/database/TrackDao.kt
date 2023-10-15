@@ -9,12 +9,14 @@ interface TrackDao {
 
     @Upsert
     fun upsertTrack(track: Track)
-
-//    @Query("SELECT * FROM track")
-//    fun getTracks(): Flow<List<Track>>
+    @Update
+    suspend fun updateIsLoved(track: Track)
 
     @Delete
     fun deleteTrack(track: Track)
+
+    @Query("SELECT * FROM track WHERE isFavourite LIKE :value")
+    fun getFavouriteTracks(value: Boolean = true): Flow<List<Track>>
 
     @Query("SELECT * FROM track ORDER BY date_added ASC")
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>>
@@ -33,10 +35,12 @@ interface TrackDao {
 
     @Query("SELECT * FROM track ORDER BY artist DESC")
     fun getTracksOrderedByArtistDESC(): Flow<List<Track>>
+    @Query("SELECT * FROM track ORDER BY duration ASC")
+    fun getTracksOrderedByDurationASC(): Flow<List<Track>>
+    @Query("SELECT * FROM track ORDER BY duration DESC")
+    fun getTracksOrderedByDurationDESC(): Flow<List<Track>>
+    @Query("SELECT * FROM track WHERE id = (:id)")
+    fun getTrack(id: String): Track
 
-    //    @Query("SELECT * FROM track WHERE id = (:id)")
-    //    suspend fun getTrack(id: String): Track
 
-    //    @Query("SELECT * FROM track ORDER BY duration ASC")
-    //    fun getTracksOrderedByDuration(): Flow<List<Track>>
 }
