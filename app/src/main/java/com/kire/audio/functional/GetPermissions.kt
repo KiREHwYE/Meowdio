@@ -24,7 +24,8 @@ fun GetPermissions(
     val permissionsState = rememberMultiplePermissionsState(
         permissions = listOf(
             android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.READ_MEDIA_AUDIO
+            android.Manifest.permission.READ_MEDIA_AUDIO,
+            android.Manifest.permission.POST_NOTIFICATIONS
         )
     )
 
@@ -44,7 +45,8 @@ fun GetPermissions(
         }
     )
 
-    if (permissionsState.permissions[0].hasPermission || permissionsState.permissions[1].hasPermission)
+    if (permissionsState.permissions[0].hasPermission ||
+        permissionsState.permissions[1].hasPermission)
         LaunchedEffect(true) {
             launch {
                 withContext(Dispatchers.IO) {

@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import javax.inject.Inject
 import androidx.datastore.preferences.preferencesDataStore
 import com.kire.audio.datastore.DataStoreConstants.DATASTORE_NAME
 import com.kire.audio.events.SortType
@@ -14,7 +13,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = DATASTORE_NAME)
 
-class DataStore @Inject constructor(
+class DataStore(
     context: Context
 ): DataStoreInterface{
 

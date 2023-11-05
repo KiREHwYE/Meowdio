@@ -10,11 +10,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 
-import javax.inject.Inject
-import javax.inject.Singleton
-
-@UnstableApi @Singleton
-class AudioPlayer @Inject constructor(
+@UnstableApi class AudioPlayer(
     private val context: Context
 ) {
 

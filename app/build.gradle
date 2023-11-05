@@ -3,7 +3,6 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'com.google.devtools.ksp' version '1.9.0-1.0.11'
     id 'kotlin-kapt'
-    id 'com.google.dagger.hilt.android'
 }
 
 kotlin {
@@ -100,7 +99,8 @@ android {
 }
 
 dependencies {
-
+    
+    implementation 'androidx.media:media:1.6.0'
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'androidx.activity:activity-compose:1.7.2'
@@ -130,23 +130,11 @@ dependencies {
 
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
 
-    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0'
-    implementation 'androidx.hilt:hilt-work:1.0.0'
-    kapt 'androidx.hilt:hilt-compiler:1.0.0'
-
-    implementation 'com.google.dagger:hilt-android:2.47'
-    kapt 'com.google.dagger:hilt-compiler:2.47'
-
     implementation "androidx.compose.material:material-icons-extended:1.6.0-alpha05"
 
     implementation "androidx.datastore:datastore-preferences:1.1.0-alpha05"
 
     implementation 'androidx.media3:media3-exoplayer:1.1.1'
-
-//    implementation 'com.google.android.exoplayer:exoplayer-core:2.19.1'
-//    implementation 'com.google.android.exoplayer:exoplayer-dash:2.19.1'
-//    implementation 'com.google.android.exoplayer:extension-cronet:2.19.1'
-//    implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

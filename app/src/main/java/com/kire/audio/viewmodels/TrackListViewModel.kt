@@ -3,6 +3,7 @@ package com.kire.audio.viewmodels
 import android.content.Context
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 
 import androidx.media3.common.Player
@@ -17,8 +18,7 @@ import com.kire.audio.events.SortOptionEvent
 import com.kire.audio.events.SortType
 import com.kire.audio.mediaHandling.AudioPlayer
 import com.kire.audio.models.Track
-
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.kire.audio.notification.AudioNotificationService
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,16 +31,33 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-import javax.inject.Inject
 
-@HiltViewModel
-class TrackListViewModel @Inject constructor(
+class TrackListViewModel(
     private val dataStore: DataStore,
     private val trackRepository: TrackRepository,
-    private val audioPlayer: AudioPlayer
+    private val audioPlayer: AudioPlayer,
+    private val audioNotificationService: AudioNotificationService,
 ) : ViewModel(){
 
-
+    class Factory(
+        private val dataStore: DataStore,
+        private val trackRepository: TrackRepository,
+        private val audioPlayer: AudioPlayer,
+        private val audioNotificationService: AudioNotificationService
+    ): ViewModelProvider.Factory{
+        override fun <T:ViewModel> create(modelClass: Class<T>):T{
+            if(modelClass.isAssignableFrom(TrackListViewModel::class.java)){
+                @Suppress("UNCHECKED_CAST")
+                return TrackListViewModel(
+                    dataStore,
+                    trackRepository,
+                    audioPlayer,
+                    audioNotificationService
+                ) as T
+            }
+            throw IllegalArgumentException("UNKNOWN VIEW MODEL CLASS")
+        }
+    }
 
     /*
     * Tracks-providing params and funcs
@@ -107,8 +124,6 @@ class TrackListViewModel @Inject constructor(
         viewModelScope.launch {
             dataStore.saveRepeatMode(REPEAT_MODE_KEY, value)
         }
-
-
 
 
 
@@ -201,8 +216,12 @@ class TrackListViewModel @Inject constructor(
         _selectList.value = selectList
     }
 
-    fun isShown(): Boolean {
-        return _currentTrackPlaying.value != null
+    private val _isShown = MutableStateFlow(_currentTrackPlaying.value != null)
+    val isShown: StateFlow<Boolean>
+        get() = _isShown.asStateFlow()
+
+    fun changeIsShown(isShown: Boolean) {
+        _isShown.value = isShown
     }
 
     fun sentInfoToBottomSheet(
@@ -215,6 +234,8 @@ class TrackListViewModel @Inject constructor(
         _bottomSheetTrackINDEX.value = trackINDEX
         _selectList.value = listSelect
         _currentTrackPlayingURI.value = currentTrackPlayingURI
+        _isShown.value = true
+        updateNotification()
     }
 
     fun sentInfoToBottomSheet(
@@ -262,13 +283,13 @@ class TrackListViewModel @Inject constructor(
 
 
 
-    private val _isPlaying = MutableStateFlow(exoPlayer.isPlaying)
-    val isPlaying: StateFlow<Boolean>
-        get() = _isPlaying
-
-    fun changeIsPlaying(playing: Boolean) {
-        _isPlaying.value = playing
-    }
+//    private val _isPlaying = MutableStateFlow(exoPlayer.isPlaying)
+//    val isPlaying: StateFlow<Boolean>
+//        get() = _isPlaying
+//
+//    fun changeIsPlaying(playing: Boolean) {
+//        _isPlaying.value = playing
+//    }
 
     private val _repeatMode = MutableStateFlow(0)
     val repeatMode: StateFlow<Int>
@@ -286,6 +307,23 @@ class TrackListViewModel @Inject constructor(
     fun changeRepeatCount(value: Int) {
         _repeatCount.value = value
     }
+
+
+
+    /*
+    * Notification funcs
+    * */
+
+    companion object {
+        val reason = MutableStateFlow(true)
+        val nextTrack = MutableStateFlow(false)
+        val previousTrack = MutableStateFlow(false)
+    }
+
+
+    fun updateNotification() =
+        audioNotificationService
+            .updateNotification(currentTrackPlaying.value)
 
 
     /*

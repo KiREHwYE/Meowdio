@@ -3,6 +3,8 @@ package com.kire.audio.activities
 import android.net.Uri
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
@@ -37,7 +39,6 @@ import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOn
 import androidx.compose.material.icons.rounded.RepeatOne
 
-import androidx.compose.material3.BottomSheetScaffoldState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -77,7 +78,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.media3.exoplayer.ExoPlayer
@@ -106,7 +106,6 @@ import java.util.concurrent.TimeUnit
 
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Screen(
     track: Track,
@@ -117,13 +116,17 @@ fun Screen(
     changeRepeatCount: (Int) -> Unit,
     durationGet: () -> Float,
     durationSet: (Float) -> Unit,
+    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    selectList: ListSelector,
+    updateIsLoved: (Track) -> Unit,
+    currentTrackPlaying: Track?,
+    currentTrackPlayingURI: String,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     backward: (MediaItem) -> Unit,
     play: () -> Unit,
     forward: (MediaItem) -> Unit,
     trackINDEX: Int,
-    isPLaying: Boolean,
     exoPlayer: ExoPlayer,
-    scaffoldState: BottomSheetScaffoldState,
     changeIsExpanded: (Boolean) -> Unit,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit
 ){
@@ -144,7 +147,6 @@ fun Screen(
 
             Header(
                 track = track,
-                scaffoldState = scaffoldState,
                 changeIsExpanded = changeIsExpanded
             )
 
@@ -152,15 +154,24 @@ fun Screen(
                 track = track,
                 trackINDEX = trackINDEX,
                 forward = forward,
-                durationSet = durationSet
+                durationSet = durationSet,
+                changeRepeatCount = changeRepeatCount,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
+                sentInfoToBottomSheet = sentInfoToBottomSheet,
+                selectListTracks = selectListTracks,
+                selectList = selectList,
+                updateIsLoved = updateIsLoved
+
             )
 
             FunctionalBlock(
                 track = track,
                 trackINDEX = trackINDEX,
                 tracks = tracks,
-                isPlaying = isPLaying,
                 saveRepeatMode = saveRepeatMode,
+                currentTrackPlaying = currentTrackPlaying,
+                updateIsLoved = updateIsLoved,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                 repeatMode = repeatMode,
                 changeRepeatMode = changeRepeatMode,
                 exoPlayer = exoPlayer,
@@ -170,7 +181,10 @@ fun Screen(
                 backward = backward,
                 play = play,
                 changeRepeatCount = changeRepeatCount,
-                forward = forward
+                forward = forward,
+                selectList = selectList,
+                selectListTracks = selectListTracks,
+                currentTrackPlayingURI = currentTrackPlayingURI
             )
         }
     }
@@ -214,7 +228,6 @@ fun Background(
 @Composable
 fun Header(
     track: Track,
-    scaffoldState: BottomSheetScaffoldState,
     changeIsExpanded: (Boolean) -> Unit
 ){
 
@@ -243,13 +256,8 @@ fun Header(
                 .pointerInput(Unit, block = {
                     this.detectTapGestures(
                         onTap = {
-                            coroutineScope.launch {
-                                launch(Dispatchers.Main) {
-                                    scaffoldState.bottomSheetState.partialExpand()
-                                }
-                                launch(Dispatchers.IO) {
-                                    changeIsExpanded(false)
-                                }
+                            coroutineScope.launch(Dispatchers.IO) {
+                                changeIsExpanded(false)
                             }
                         }
                     )
@@ -420,7 +428,13 @@ fun ShowImageAndText(
     track: Track,
     trackINDEX: Int,
     durationSet: (Float) -> Unit,
-    forward: (MediaItem) -> Unit
+    forward: (MediaItem) -> Unit,
+    selectList: ListSelector,
+    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
+    sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
+    changeRepeatCount: (Int) -> Unit
 ){
 
     val imageUri = track.imageUri
@@ -458,7 +472,14 @@ fun ShowImageAndText(
             track = track,
             trackINDEX = trackINDEX,
             forward = forward,
-            durationSet = durationSet
+            durationSet = durationSet,
+            selectList = selectList,
+            selectListTracks = selectListTracks,
+            changeRepeatCount = changeRepeatCount,
+            updateIsLoved = updateIsLoved,
+            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
+            sentInfoToBottomSheet = sentInfoToBottomSheet
+
         )
     }
 
@@ -471,17 +492,19 @@ fun TextBlock(
     trackINDEX: Int,
     durationSet: (Float) -> Unit,
     forward: (MediaItem) -> Unit,
-    viewModel: TrackListViewModel = hiltViewModel()
+    selectList: ListSelector,
+    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
+    sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
+    changeRepeatCount: (Int) -> Unit
 ){
     val interactionSource = remember { MutableInteractionSource() }
 
     val title = track.title
     val artist = track.artist
 
-//    val currentTrackPlaying by viewModel.currentTrackPlaying.collectAsStateWithLifecycle()
-
-    val selectList by viewModel.selectList.collectAsStateWithLifecycle()
-    val currentTrackList by viewModel.selectListTracks(selectList).collectAsStateWithLifecycle()
+    val currentTrackList by selectListTracks(selectList).collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -538,25 +561,25 @@ fun TextBlock(
                 ) {
 
                     if (selectList == ListSelector.FAVOURITE_LIST && track.isFavourite) {
-                        viewModel.changeRepeatCount(0)
+                        changeRepeatCount(0)
 
                         if (currentTrackList.size == 1) {
                             coroutineScope.launch(Dispatchers.IO) {
-                                viewModel.updateIsLoved(
+                                updateIsLoved(
                                     track
                                         .copy(isFavourite = !track.isFavourite)
                                         .also {
-                                            viewModel.sentInfoToBottomSheet(it)
+                                            sentInfoToBottomSheetOneParameter(it)
                                         }
                                 )
                             }
                         } else {
                             coroutineScope.launch(Dispatchers.IO) {
-                                viewModel.updateIsLoved(
+                                updateIsLoved(
                                     track
                                         .copy(isFavourite = !track.isFavourite)
                                         .also {
-                                            viewModel.sentInfoToBottomSheet(it)
+                                            sentInfoToBottomSheetOneParameter(it)
                                         }
                                 )
                             }
@@ -568,7 +591,7 @@ fun TextBlock(
 
 
 
-                            viewModel.sentInfoToBottomSheet(
+                            sentInfoToBottomSheet(
                                 currentTrackList[newINDEX],
                                 selectList,
                                 if (newINDEX == 0) 0 else trackINDEX,
@@ -582,11 +605,11 @@ fun TextBlock(
                         }
                     } else {
                         coroutineScope.launch(Dispatchers.IO) {
-                            viewModel.updateIsLoved(
+                            updateIsLoved(
                                 track
                                     .copy(isFavourite = !track.isFavourite)
                                     .also {
-                                        viewModel.sentInfoToBottomSheet(it)
+                                        sentInfoToBottomSheetOneParameter(it)
                                     }
                             )
                         }
@@ -629,6 +652,7 @@ fun SliderBlock(
             onValueChange = {
                 sliderPosition = it
                 exoPlayer.seekTo(it.toLong())
+                TrackListViewModel.reason.value = true
             },
             valueRange = 0f..durationGet(),
             colors = SliderDefaults.colors(
@@ -674,9 +698,15 @@ fun SliderBlock(
 fun ControlButtons(
     track: Track,
     trackINDEX: Int,
-    isPlaying: Boolean,
+    exoPlayer: ExoPlayer,
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
+    selectList: ListSelector,
+    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    currentTrackPlaying: Track?,
+    currentTrackPlayingURI: String,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     changeRepeatMode: (Int) -> Unit,
     changeRepeatCount: (Int) -> Unit,
     tracks: List<Track>,
@@ -685,7 +715,6 @@ fun ControlButtons(
     play: () -> Unit,
     forward: (MediaItem) -> Unit,
     durationSet: (Float) -> Unit,
-    viewModel: TrackListViewModel = hiltViewModel()
 ) {
 
     val title = track.title
@@ -700,9 +729,9 @@ fun ControlButtons(
         skipPartiallyExpanded = true
     )
 
-    val repeatMode by repeatMode.collectAsStateWithLifecycle()
+    val isPlaying by TrackListViewModel.reason.collectAsStateWithLifecycle()
 
-    val selectList by viewModel.selectList.collectAsStateWithLifecycle()
+    val repeatMode by repeatMode.collectAsStateWithLifecycle()
 
     Row(modifier = Modifier
         .width(340.dp)
@@ -857,15 +886,16 @@ fun ControlButtons(
             tint = Color.White,
         )
 
-        val currentTrackPlayingURI by viewModel.currentTrackPlayingURI.collectAsStateWithLifecycle()
-
         if (isBottomSheetOpened){
             ModalBottomSheetFavouriteTracks(
-                exoPlayer = viewModel.exoPlayer,
+                exoPlayer = exoPlayer,
                 modalBottomSheetState = modalBottomSheetState,
-                favouriteTracks = viewModel.selectListTracks(ListSelector.FAVOURITE_LIST),
-                sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet,
+                favouriteTracks = selectListTracks(ListSelector.FAVOURITE_LIST),
+                sentInfoToBottomSheet = sentInfoToBottomSheet,
                 currentTrackPlayingURI = currentTrackPlayingURI,
+                currentTrackPlaying = currentTrackPlaying,
+                updateIsLoved = updateIsLoved,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                 changeBottomSheetOpened = {isOpened ->
                     isBottomSheetOpened = isOpened
                 }
@@ -876,12 +906,15 @@ fun ControlButtons(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ModalBottomSheetFavouriteTracks(
     exoPlayer: ExoPlayer,
     modalBottomSheetState: SheetState,
     favouriteTracks: StateFlow<List<Track>>,
+    currentTrackPlaying: Track?,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
     currentTrackPlayingURI: String,
     changeBottomSheetOpened: (Boolean) -> Unit
@@ -949,10 +982,18 @@ fun ModalBottomSheetFavouriteTracks(
                             track = track,
                             selectList = ListSelector.FAVOURITE_LIST,
                             exoPlayer = exoPlayer,
-                            isPlaying = exoPlayer.isPlaying,
                             currentUri = currentTrackPlayingURI,
                             trackINDEX = index,
+                            currentTrackPlaying = currentTrackPlaying,
+                            updateIsLoved = updateIsLoved,
+                            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                             sentInfoToBottomSheet = sentInfoToBottomSheet,
+                            modifier = Modifier.animateItemPlacement(
+                                animationSpec = tween(
+                                    durationMillis = 400,
+                                    easing = FastOutSlowInEasing
+                                )
+                            ),
                             imageSize = 60.dp,
                             textTitleSize = 19.sp,
                             textArtistSize = 15.sp,
@@ -969,7 +1010,12 @@ fun ModalBottomSheetFavouriteTracks(
 fun FunctionalBlock(
     track: Track,
     trackINDEX: Int,
-    isPlaying: Boolean,
+    currentTrackPlaying: Track?,
+    currentTrackPlayingURI: String,
+    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    selectList: ListSelector,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
     changeRepeatMode: (Int) -> Unit,
@@ -998,9 +1044,11 @@ fun FunctionalBlock(
         ControlButtons(
             track = track,
             trackINDEX = trackINDEX,
-            isPlaying = isPlaying,
             saveRepeatMode = saveRepeatMode,
             repeatMode = repeatMode,
+            currentTrackPlaying = currentTrackPlaying,
+            updateIsLoved = updateIsLoved,
+            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
             changeRepeatMode = changeRepeatMode,
             tracks = tracks,
             sentInfoToBottomSheet = sentInfoToBottomSheet,
@@ -1008,7 +1056,11 @@ fun FunctionalBlock(
             play = play,
             forward = forward,
             durationSet = durationSet,
-            changeRepeatCount = changeRepeatCount
+            changeRepeatCount = changeRepeatCount,
+            currentTrackPlayingURI = currentTrackPlayingURI,
+            exoPlayer = exoPlayer,
+            selectListTracks = selectListTracks,
+            selectList = selectList
         )
     }
 }

@@ -19,12 +19,9 @@ import com.kire.audio.models.Track
 import kotlinx.coroutines.flow.Flow
 
 import java.io.File
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
 @SuppressLint("Range")
-class TrackRepository @Inject constructor(
+class TrackRepository(
     private val context: Context
 ) {
 

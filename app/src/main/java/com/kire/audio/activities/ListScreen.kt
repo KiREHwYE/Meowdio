@@ -3,11 +3,13 @@ package com.kire.audio.activities
 import android.content.Context
 
 import android.net.Uri
+import android.support.v4.media.session.MediaSessionCompat
 
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
@@ -38,15 +41,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 
-import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -60,6 +62,8 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -72,6 +76,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,8 +86,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import androidx.hilt.navigation.compose.hiltViewModel
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -121,23 +124,26 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.kire.audio.ListSelector
 import kotlinx.coroutines.delay
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun Item(
     track: Track,
-    isPlaying: Boolean,
     exoPlayer: ExoPlayer,
     selectList: ListSelector,
     currentUri: String,
+    currentTrackPlaying: Track?,
+    updateIsLoved: (Track) -> Unit,
     trackINDEX: Int,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     imageSize: Dp = 56.dp,
     textTitleSize: TextUnit = 17.sp,
     textArtistSize: TextUnit = 13.sp,
     startPadding: Dp = 16.dp,
-    viewModel: TrackListViewModel = hiltViewModel()
+    modifier: Modifier
 ){
 
 
@@ -149,7 +155,7 @@ fun Item(
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(
                 interactionSource = interactionSource,
@@ -163,38 +169,41 @@ fun Item(
                     uri
                 )
 
-                if (isPlaying && currentUri == uri) {
-                    exoPlayer.apply {
-                        pause()
-                    }
-                } else if (!isPlaying && currentUri == uri) {
-                    exoPlayer.apply {
-                        prepare()
-                        play()
-                    }
-                } else if (!isPlaying) {
+                TrackListViewModel.reason.value.apply {
+                    if (this && currentUri == uri) {
+                        exoPlayer.apply {
+                            pause()
+                        }
+                    } else if (!this && currentUri == uri) {
+                        exoPlayer.apply {
+                            prepare()
+                            play()
+                        }
+                    } else if (!this) {
 
-                    val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
 
-                    exoPlayer.apply {
-                        setMediaItem(newMediaItem)
-                        prepare()
-                        play()
-                    }
-                } else {
+                        exoPlayer.apply {
+                            setMediaItem(newMediaItem)
+                            prepare()
+                            play()
+                        }
+                    } else {
 
-                    exoPlayer.apply {
-                        pause()
-                    }
+                        exoPlayer.apply {
+                            pause()
+                        }
 
-                    val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
 
-                    exoPlayer.apply {
-                        setMediaItem(newMediaItem)
-                        prepare()
-                        play()
+                        exoPlayer.apply {
+                            setMediaItem(newMediaItem)
+                            prepare()
+                            play()
+                        }
                     }
                 }
+
             }
     ) {
 
@@ -272,9 +281,6 @@ fun Item(
                 )
             }
 
-            val currentTrackPlaying by viewModel.currentTrackPlaying.collectAsStateWithLifecycle()
-
-
             if (selectList == ListSelector.FAVOURITE_LIST) {
                 Icon(
                     Icons.Rounded.Favorite,
@@ -285,13 +291,13 @@ fun Item(
                         .pointerInput(Unit, block = {
                             this.detectTapGestures(
                                 onTap = {
-                                    viewModel.updateIsLoved(
+                                    updateIsLoved(
                                         track
                                             .copy(isFavourite = !track.isFavourite)
-                                            .also {track ->
+                                            .also { track ->
                                                 currentTrackPlaying?.let {
                                                     if (it.title == title && it.artist == artist && it.path == uri)
-                                                        viewModel.sentInfoToBottomSheet(track)
+                                                        sentInfoToBottomSheetOneParameter(track)
                                                 }
                                             }
                                     )
@@ -304,11 +310,32 @@ fun Item(
     }
 }
 
+@Composable
+fun OnScrollListener(
+    listState: LazyListState,
+    currentTrackPlaying: Track?,
+    changeIsShown: (Boolean) -> Unit
+){
+    var previousIndex by rememberSaveable {
+        mutableStateOf(0)
+    }
 
+    LaunchedEffect(listState.firstVisibleItemIndex){
+        if (listState.firstVisibleItemIndex - previousIndex > 2){
+            changeIsShown(false)
+            previousIndex = listState.firstVisibleItemIndex
+        }
+        if (currentTrackPlaying != null && listState.firstVisibleItemIndex - previousIndex < -2){
+            changeIsShown(true)
+            previousIndex = listState.firstVisibleItemIndex
+        }
+    }
+}
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListScreen(
-    viewModel: TrackListViewModel = hiltViewModel()
+    viewModel: TrackListViewModel
 ) {
     
     val listState = rememberLazyListState()
@@ -321,23 +348,35 @@ fun ListScreen(
         }
     }
 
+    val currentTrackPlaying by viewModel.currentTrackPlaying.collectAsStateWithLifecycle()
+
+    OnScrollListener(
+        listState = listState,
+        currentTrackPlaying = currentTrackPlaying,
+        changeIsShown = viewModel::changeIsShown
+    )
+
+
     val tracks by viewModel.selectListTracks(listSelect = ListSelector.MAIN_LIST).collectAsStateWithLifecycle()
     val trackINDEX by viewModel.bottomSheetTrackINDEX.collectAsStateWithLifecycle()
-    val isPlaying = viewModel.isPlaying.collectAsStateWithLifecycle()
+
+//    LaunchedEffect(currentTrackPlaying!=null){
+//        viewModel.updateNotification()
+//    }
 
     val currentTrackPlayingURI by viewModel.currentTrackPlayingURI.collectAsStateWithLifecycle()
 
-    DisposableEffect(Unit) {
-        val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(_isPlaying: Boolean) {
-                viewModel.changeIsPlaying(_isPlaying)
-            }
-        }
-        viewModel.exoPlayer.addListener(listener)
-        onDispose {
-            viewModel.exoPlayer.removeListener(listener)
-        }
-    }
+//    DisposableEffect(Unit) {
+//        val listener = object : Player.Listener {
+//            override fun onIsPlayingChanged(_isPlaying: Boolean) {
+//                TrackListViewModel.reason.value = _isPlaying
+//            }
+//        }
+//        viewModel.exoPlayer.addListener(listener)
+//        onDispose {
+//            viewModel.exoPlayer.removeListener(listener)
+//        }
+//    }
 
     Box(
         modifier = Modifier
@@ -369,7 +408,9 @@ fun ListScreen(
                         exoPlayer = viewModel.exoPlayer,
                         searchText = viewModel.searchText,
                         active = viewModel.active,
-                        isPlaying = isPlaying.value,
+                        currentTrackPlaying = currentTrackPlaying,
+                        updateIsLoved = viewModel::updateIsLoved,
+                        sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
                         changeSelectList = viewModel::changeSelectList,
                         onSearchTextChange = viewModel::onSearchTextChange,
                         onActiveChange = viewModel::onActiveChange,
@@ -395,15 +436,43 @@ fun ListScreen(
                             track = track,
                             currentUri = currentTrackPlayingURI,
                             exoPlayer = viewModel.exoPlayer,
-                            isPlaying = isPlaying.value,
                             selectList = ListSelector.MAIN_LIST,
+                            currentTrackPlaying = currentTrackPlaying,
+                            updateIsLoved = viewModel::updateIsLoved,
+                            sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
                             trackINDEX = index,
+                            modifier = Modifier.animateItemPlacement(
+                                animationSpec = tween(
+                                    durationMillis = 300,
+                                    easing = FastOutSlowInEasing
+                                )),
                             sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
                         )
                     }
                 }
             }
         )
+
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(124.dp)
+//                .align(Alignment.BottomCenter)
+//                .pointerInput(Unit) {
+//                    detectDragGestures { change, dragAmount ->
+//                        change.consume()
+//                        val (x, y) = dragAmount
+//
+//                        viewModel.currentTrackPlaying.value?.let {
+//                            if (y < 0 && x < 80 && x > -80) {
+//                                coroutineScope.launch(Dispatchers.IO) {
+//                                    viewModel.changeIsShown(true)
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//        )
 
         BottomPlayer(
             currentTrackPlaying = viewModel.currentTrackPlaying,
@@ -413,14 +482,17 @@ fun ListScreen(
             repeatMode = viewModel.repeatMode,
             changeRepeatMode = viewModel::changeRepeatMode,
             repeatCount = viewModel.repeatCount,
+            currentTrackPlayingURI = currentTrackPlayingURI,
             changeRepeatCount = viewModel::changeRepeatCount,
             isExpanded = viewModel.isExpanded,
             saveRepeatMode = viewModel::saveRepeatMode,
             changeIsExpanded = viewModel::changeIsExpanded,
-            isShown = viewModel::isShown,
+            isShown = viewModel.isShown,
+            updateIsLoved = viewModel::updateIsLoved,
+            sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
+            changeIsShown = viewModel::changeIsShown,
             exoPlayer = viewModel.exoPlayer,
             changeSelectList = viewModel::changeSelectList,
-            isPlaying = isPlaying,
             sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet,
         )
 
@@ -458,8 +530,6 @@ fun ListScreen(
     }
 }
 
-
-
 @Composable
 fun ScrollToTopButton(
     onClick: () -> Unit
@@ -467,7 +537,7 @@ fun ScrollToTopButton(
     Box(
         Modifier
             .fillMaxSize()
-            .padding(bottom = 100.dp, end = 22.dp), Alignment.BottomEnd
+            .padding(bottom = 120.dp, end = 20.dp), Alignment.BottomEnd
     ) {
 
         Icon(
@@ -521,7 +591,9 @@ fun UserActionBar(
     currentUri: String,
     exoPlayer: ExoPlayer,
     searchText: StateFlow<String>,
-    isPlaying: Boolean,
+    currentTrackPlaying: Track?,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     active: StateFlow<Boolean>,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     onSearchTextChange: (String) -> Unit,
@@ -608,9 +680,11 @@ fun UserActionBar(
                 currentUri = currentUri,
                 searchText = searchText,
                 active = active,
+                currentTrackPlaying = currentTrackPlaying,
+                updateIsLoved = updateIsLoved,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                 selectListTracks = selectListTracks,
                 exoPlayer = exoPlayer,
-                isPlaying = isPlaying,
                 isExpanded = isExpanded,
                 onSearchTextChange = onSearchTextChange,
                 onActiveChange = onActiveChange,
@@ -867,14 +941,16 @@ fun DropDownMenu(
 
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
     currentUri: String,
     searchText: StateFlow<String>,
+    currentTrackPlaying: Track?,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     active: StateFlow<Boolean>,
     exoPlayer: ExoPlayer,
-    isPlaying: Boolean,
     isExpanded: StateFlow<Boolean>,
     changeSelectList: (ListSelector) -> Unit,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
@@ -956,10 +1032,17 @@ fun SearchBar(
                         track = track,
                         selectList = ListSelector.SEARCH_LIST,
                         exoPlayer = exoPlayer,
-                        isPlaying = isPlaying,
                         currentUri = currentUri,
                         trackINDEX = index,
+                        currentTrackPlaying = currentTrackPlaying,
+                        updateIsLoved = updateIsLoved,
+                        sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                         sentInfoToBottomSheet = sentInfoToBottomSheet,
+                        modifier = Modifier.animateItemPlacement(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = FastOutSlowInEasing
+                            )),
                         imageSize = 44.dp,
                         textTitleSize = 15.sp,
                         textArtistSize = 11.sp,
@@ -1000,19 +1083,19 @@ fun Updater(
 }
 
 
-@OptIn(
-    ExperimentalMaterial3Api::class,
-    ExperimentalFoundationApi::class
-)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BottomPlayer (
+fun BottomPlayer(
     currentTrackPlaying: StateFlow<Track?>,
     selectList: StateFlow<ListSelector>,
-    isPlaying: State<Boolean>,
     trackINDEX: Int,
+    updateIsLoved: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     repeatMode: StateFlow<Int>,
     changeRepeatMode: (Int) -> Unit,
     saveRepeatMode: (Int) -> Unit,
+    currentTrackPlayingURI: String,
     repeatCount: StateFlow<Int>,
     changeRepeatCount: (Int) -> Unit,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
@@ -1020,10 +1103,10 @@ fun BottomPlayer (
     exoPlayer: ExoPlayer,
     changeIsExpanded: (Boolean) -> Unit,
     changeSelectList: (ListSelector) -> Unit,
-    isShown: () -> Boolean,
-    sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
-){
-
+    isShown: StateFlow<Boolean>,
+    changeIsShown: (Boolean) -> Unit,
+    sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -1038,12 +1121,16 @@ fun BottomPlayer (
         currentTrackList = selectListTracks(ListSelector.MAIN_LIST).collectAsStateWithLifecycle().value
     }
 
+    val isPlaying by TrackListViewModel.reason.collectAsStateWithLifecycle()
+
+    val currentTrackPlaying by currentTrackPlaying.collectAsStateWithLifecycle()
+
+    val isShown by isShown.collectAsStateWithLifecycle()
 
     val title = track?.title
     val artist = track?.artist
     val imageUri = track?.imageUri
 
-    val scaffoldState = rememberBottomSheetScaffoldState()
     val isExpanded by isExpanded.collectAsStateWithLifecycle()
 
     var duration: Float by remember { mutableStateOf(0f) }
@@ -1116,8 +1203,8 @@ fun BottomPlayer (
 
             1 -> {
 
-                if (_repeatCount < 1) {
-                    changeRepeatCount(1)
+                if (_repeatCount < 2) {
+                    changeRepeatCount(_repeatCount + 1)
                     exoPlayer.seekTo(0)
                     if (!exoPlayer.isPlaying) {
                         exoPlayer.apply {
@@ -1179,332 +1266,358 @@ fun BottomPlayer (
         }
     }
 
-    AnimatedVisibility(
-        visible = isShown(),
-        enter = slideInVertically(
-            initialOffsetY = { 80 },
-            animationSpec = tween(durationMillis = 500, easing = LinearOutSlowInEasing)) + fadeIn(animationSpec = tween(durationMillis = 100))
-    ){
-        
-        BottomSheetScaffold(
-            scaffoldState = scaffoldState,
-            modifier = Modifier
-                .fillMaxWidth(),
-            sheetShape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-            sheetDragHandle = {  },
-            sheetPeekHeight = 72.dp,
-            sheetSwipeEnabled = false,
-            sheetContainerColor = Color.White,
-            sheetShadowElevation = 12.dp,
-            sheetContent = {
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit, block = {
-                            this.detectTapGestures(
-                                onTap = {
-                                    changeIsExpanded(true)
-                                    coroutineScope.launch {
-                                        scaffoldState.bottomSheetState.expand()
-                                    }
-                                }
-                            )
-                        })
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+
+    AnimatedVisibility(
+        visible = isShown,
+        enter = slideInVertically(
+            initialOffsetY = { 120 },
+            animationSpec = tween(durationMillis = 450, easing = LinearOutSlowInEasing)) + fadeIn(animationSpec = tween(durationMillis = 100)),
+        exit = slideOutVertically(
+            targetOffsetY = { 120 },
+            animationSpec = tween(durationMillis = 450, easing = LinearOutSlowInEasing)) + fadeOut(animationSpec = tween(durationMillis = 90))
+    ) {
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(124.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        val (x, y) = dragAmount
+
+                        if (y > 10 && x < 60 && x > -60) {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                changeIsShown(false)
+                            }
+                        }
+                    }
+                }
+                .padding(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 8.dp
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(18.dp)
+                    .pointerInput(Unit, block = {
+                        this.detectTapGestures(
+                            onTap = {
+                                changeIsExpanded(true)
+                            }
+                        )
+                    }),
+                contentAlignment = Alignment.Center
+            ) {
+
+                this@Card.AnimatedVisibility(
+                    visible = !isExpanded,
+                    enter = fadeIn(
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            delayMillis = 100,
+                            easing = LinearOutSlowInEasing
+                        )
+                    ),
+                    exit = fadeOut(animationSpec = tween(0))
                 ) {
 
-                    this@BottomSheetScaffold.AnimatedVisibility(
-                        visible = !isExpanded,
-                        enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 100, easing = LinearOutSlowInEasing)),
-                        exit = fadeOut(animationSpec = tween(0))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+
+                        Crossfade(
+                            targetState = imageUri,
+                            label = "BottomSheet Partial Expanded"
+                        ) {
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(it)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .allowHardware(true)
+                                        .diskCacheKey(it.toString())
+                                        .memoryCacheKey(it.toString())
+                                        .build(),
+                                    placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                                    contentDescription = "Track Image",
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .fillMaxHeight()
+                                )
+
+                                Text(
+                                    buildAnnotatedString {
+                                        withStyle(
+                                            style = SpanStyle(
+                                                color = Color.Black,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        ) {
+                                            append(title)
+                                        }
+                                        withStyle(
+                                            style = SpanStyle(
+                                                color = Color.Gray,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.W300
+                                            )
+                                        ) {
+                                            append("\n" + artist)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .padding(start = 16.dp)
+                                        .fillMaxWidth(0.55f)
+                                        .basicMarquee(
+                                            animationMode = MarqueeAnimationMode.Immediately,
+                                            delayMillis = 0
+                                        )
+                                )
+                            }
+                        }
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 9.dp, start = 20.dp, end = 20.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(start = 28.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
 
-                            Crossfade(
-                                targetState = imageUri,
-                                label = "BottomSheet Partial Expanded"
-                            ) {
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(LocalContext.current)
-                                            .data(it)
-                                            .memoryCachePolicy(CachePolicy.ENABLED)
-                                            .diskCachePolicy(CachePolicy.ENABLED)
-                                            .allowHardware(true)
-                                            .diskCacheKey(it.toString())
-                                            .memoryCacheKey(it.toString())
-                                            .build(),
-                                        placeholder = painterResource(R.drawable.ic_launcher_foreground),
-                                        contentDescription = "Track Image",
-                                        modifier = Modifier
-                                            .size(54.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                    )
-
-                                    Text(
-                                        buildAnnotatedString {
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = Color.Black,
-                                                    fontSize = 16.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            ) {
-                                                append(title)
-                                            }
-                                            withStyle(
-                                                style = SpanStyle(
-                                                    color = Color.Gray,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.W300
-                                                )
-                                            ) {
-                                                append("\n" + artist)
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .padding(start = 16.dp)
-                                            .fillMaxWidth(0.55f)
-                                            .basicMarquee(
-                                                animationMode = MarqueeAnimationMode.Immediately,
-                                                delayMillis = 0
-                                            )
-                                    )
-                                }
-                            }
-
-                            Row(
+                            Icon(
+                                painter = painterResource(id = R.drawable.skip_previous_button_bottom_sheet),
+                                contentDescription = null,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 28.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                                    .size(17.dp)
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = null
+                                    ) {
+                                        changeRepeatCount(0)
 
-                                Icon(
-                                    painter = painterResource(id = R.drawable.skip_previous_button_bottom_sheet),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(17.dp)
-                                        .clickable(
-                                            interactionSource = interactionSource,
-                                            indication = null
-                                        ) {
-                                            changeRepeatCount(0)
+                                        val newINDEX =
+                                            if (currentTrackList[trackINDEX].imageUri == imageUri && currentTrackList[trackINDEX].title == title && currentTrackList[trackINDEX].artist == artist)
+                                                SkipTrackAction.PREVIOUS.action(
+                                                    trackINDEX,
+                                                    currentTrackList.size
+                                                )
+                                            else 0
 
-                                            val newINDEX =
-                                                if (currentTrackList[trackINDEX].imageUri == imageUri && currentTrackList[trackINDEX].title == title && currentTrackList[trackINDEX].artist == artist)
-                                                    SkipTrackAction.PREVIOUS.action(
-                                                        trackINDEX,
-                                                        currentTrackList.size
-                                                    )
-                                                else 0
-
-                                            sentInfoToBottomSheet(
-                                                currentTrackList[newINDEX],
-                                                selectList,
-                                                newINDEX,
-                                                currentTrackList[newINDEX].path
-                                            )
-
-                                            val newMediaItem =
-                                                MediaItem.fromUri(Uri.parse(currentTrackList[newINDEX].path))
-
-                                            exoPlayer.apply {
-                                                setMediaItem(newMediaItem)
-                                                prepare()
-                                                play()
-                                            }
-                                        }
-                                )
-
-                                Icon(
-                                    painter =
-                                        if (isPlaying.value)
-                                            painterResource(id = R.drawable.pause_button_bottom_sheet)
-                                        else
-                                            painterResource(id = R.drawable.play_button_bottom_sheet),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(if (isPlaying.value) 22.dp else 20.dp)
-                                        .pointerInput(Unit, block = {
-                                            this.detectTapGestures(
-                                                onTap = {
-                                                    if (!isPlaying.value) {
-                                                        exoPlayer.apply {
-                                                            play()
-                                                        }
-                                                    } else {
-                                                        exoPlayer.apply {
-                                                            pause()
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        })
-                                )
-
-                                Icon(
-                                    painter = painterResource(id = R.drawable.skip_next_button_bottom_sheet),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(17.dp)
-                                        .clickable(
-                                            interactionSource = interactionSource,
-                                            indication = null
-                                        ) {
-                                            changeRepeatCount(0)
-
-                                            val newINDEX =
-                                                if (currentTrackList[trackINDEX].imageUri == imageUri && currentTrackList[trackINDEX].title == title && currentTrackList[trackINDEX].artist == artist)
-                                                    SkipTrackAction.NEXT.action(
-                                                        trackINDEX,
-                                                        currentTrackList.size
-                                                    )
-                                                else 0
-
-                                            sentInfoToBottomSheet(
-                                                currentTrackList[newINDEX],
-                                                selectList,
-                                                newINDEX,
-                                                currentTrackList[newINDEX].path
-                                            )
-
-                                            val newMediaItem =
-                                                MediaItem.fromUri(Uri.parse(currentTrackList[newINDEX].path))
-
-                                            exoPlayer.apply {
-                                                setMediaItem(newMediaItem)
-                                                prepare()
-                                                play()
-                                            }
-                                        }
-                                )
-
-                            }
-                        }
-                    }
-
-                    this@BottomSheetScaffold.AnimatedVisibility(
-                        visible = isExpanded,
-                        enter = fadeIn(animationSpec = tween(300, easing = LinearOutSlowInEasing)),
-                        exit = fadeOut(animationSpec = tween(300))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .pointerInput(Unit){
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
-                                        val (x, y) = dragAmount
-
-                                        if (y > 50 && x < 40 && x > -40) {
-                                            coroutineScope.launch {
-                                                launch(Dispatchers.Main) {
-                                                    scaffoldState.bottomSheetState.partialExpand()
-                                                }
-                                                launch(Dispatchers.IO) {
-                                                    changeIsExpanded(false)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                        ) {
-
-                            BackHandler {
-                                coroutineScope.launch {
-                                    launch(Dispatchers.Main) {
-                                        scaffoldState.bottomSheetState.partialExpand()
-                                    }
-                                    launch(Dispatchers.IO) {
-                                        changeIsExpanded(false)
-                                    }
-                                }
-                                return@BackHandler
-                            }
-
-
-                            Screen(
-                                track = track!!,
-                                trackINDEX =
-                                    if(trackINDEX == currentTrackList.size)
-                                        SkipTrackAction.NEXT.action(
-                                            trackINDEX,
-                                            currentTrackList.size
+                                        sentInfoToBottomSheet(
+                                            currentTrackList[newINDEX],
+                                            selectList,
+                                            newINDEX,
+                                            currentTrackList[newINDEX].path
                                         )
-                                    else
-                                        trackINDEX,
-                                tracks = currentTrackList,
-                                saveRepeatMode = saveRepeatMode,
-                                isPLaying = isPlaying.value,
-                                repeatMode = repeatMode,
-                                changeRepeatMode = changeRepeatMode,
-                                scaffoldState = scaffoldState,
-                                exoPlayer = exoPlayer,
-                                changeRepeatCount = changeRepeatCount,
-                                durationGet = {
-                                    duration
-                                },
-                                durationSet = { d ->
-                                    duration = d
-                                },
-                                changeIsExpanded = changeIsExpanded,
-                                sentInfoToBottomSheet = sentInfoToBottomSheet,
-                                backward = { mediaItem ->
-                                    if (exoPlayer.isPlaying) {
-                                        exoPlayer.apply {
-                                            stop()
-                                        }
-                                    }
 
-                                    exoPlayer.apply {
-                                        setMediaItem(mediaItem)
-                                        prepare()
-                                        play()
-                                    }
-                                },
-                                play = {
-                                    if (!exoPlayer.isPlaying) {
+                                        val newMediaItem =
+                                            MediaItem.fromUri(Uri.parse(currentTrackList[newINDEX].path))
+
                                         exoPlayer.apply {
+                                            setMediaItem(newMediaItem)
+                                            prepare()
                                             play()
                                         }
-                                    } else {
-                                        exoPlayer.apply {
-                                            pause()
-                                        }
                                     }
-                                },
-                                forward = { mediaItem ->
-                                    if (exoPlayer.isPlaying) {
-                                        exoPlayer.apply {
-                                            stop()
-                                        }
-                                    }
-
-                                    exoPlayer.apply {
-                                        setMediaItem(mediaItem)
-                                        prepare()
-                                        play()
-                                    }
-                                }
                             )
 
+                            Icon(
+                                painter =
+                                if (isPlaying)
+                                    painterResource(id = R.drawable.pause_button_bottom_sheet)
+                                else
+                                    painterResource(id = R.drawable.play_button_bottom_sheet),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(if (isPlaying) 22.dp else 20.dp)
+                                    .pointerInput(Unit, block = {
+                                        this.detectTapGestures(
+                                            onTap = {
+                                                if (!isPlaying) {
+                                                    exoPlayer.apply {
+                                                        play()
+                                                    }
+                                                } else {
+                                                    exoPlayer.apply {
+                                                        pause()
+                                                        TrackListViewModel.reason.value = false
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    })
+                            )
+
+                            Icon(
+                                painter = painterResource(id = R.drawable.skip_next_button_bottom_sheet),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(17.dp)
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = null
+                                    ) {
+                                        changeRepeatCount(0)
+
+                                        val newINDEX =
+                                            if (currentTrackList[trackINDEX].imageUri == imageUri && currentTrackList[trackINDEX].title == title && currentTrackList[trackINDEX].artist == artist)
+                                                SkipTrackAction.NEXT.action(
+                                                    trackINDEX,
+                                                    currentTrackList.size
+                                                )
+                                            else 0
+
+                                        sentInfoToBottomSheet(
+                                            currentTrackList[newINDEX],
+                                            selectList,
+                                            newINDEX,
+                                            currentTrackList[newINDEX].path
+                                        )
+
+                                        val newMediaItem =
+                                            MediaItem.fromUri(Uri.parse(currentTrackList[newINDEX].path))
+
+                                        exoPlayer.apply {
+                                            setMediaItem(newMediaItem)
+                                            prepare()
+                                            play()
+                                        }
+                                    }
+                            )
                         }
                     }
                 }
             }
-        ) {
+        }
+    }
 
+
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = slideInVertically(
+                initialOffsetY = { fullHeight -> fullHeight }, animationSpec = tween(250, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(280, easing = FastOutSlowInEasing)),
+            exit = slideOutVertically(
+                targetOffsetY = { fullHeight -> fullHeight }, animationSpec = tween(250, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            val (x, y) = dragAmount
+
+                            if (y > 50 && x < 40 && x > -40) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    changeIsExpanded(false)
+                                }
+                            }
+                        }
+                    }
+            ) {
+
+                BackHandler {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        changeIsExpanded(false)
+                    }
+                    return@BackHandler
+                }
+
+
+                Screen(
+                    track = track!!,
+                    trackINDEX =
+                    if (trackINDEX == currentTrackList.size)
+                        SkipTrackAction.NEXT.action(
+                            trackINDEX,
+                            currentTrackList.size
+                        )
+                    else
+                        trackINDEX,
+                    tracks = currentTrackList,
+                    saveRepeatMode = saveRepeatMode,
+                    repeatMode = repeatMode,
+                    changeRepeatMode = changeRepeatMode,
+                    currentTrackPlaying = currentTrackPlaying,
+                    updateIsLoved = updateIsLoved,
+                    selectListTracks = selectListTracks,
+                    currentTrackPlayingURI = currentTrackPlayingURI,
+                    selectList = selectList,
+                    sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
+                    exoPlayer = exoPlayer,
+                    changeRepeatCount = changeRepeatCount,
+                    durationGet = {
+                        duration
+                    },
+                    durationSet = { d ->
+                        duration = d
+                    },
+                    changeIsExpanded = changeIsExpanded,
+                    sentInfoToBottomSheet = sentInfoToBottomSheet,
+                    backward = { mediaItem ->
+                        if (isPlaying) {
+                            exoPlayer.apply {
+                                stop()
+                            }
+                        }
+
+                        exoPlayer.apply {
+                            setMediaItem(mediaItem)
+                            prepare()
+                            play()
+                        }
+                    },
+                    play = {
+                        if (!isPlaying) {
+                            exoPlayer.apply {
+                                play()
+                            }
+                        } else {
+                            exoPlayer.apply {
+                                pause()
+                                TrackListViewModel.reason.value = false
+                            }
+                        }
+                    },
+                    forward = { mediaItem ->
+                        if (exoPlayer.isPlaying) {
+                            exoPlayer.apply {
+                                stop()
+                            }
+                        }
+
+                        exoPlayer.apply {
+                            setMediaItem(mediaItem)
+                            prepare()
+                            play()
+                        }
+                    }
+                )
+            }
         }
     }
 }
