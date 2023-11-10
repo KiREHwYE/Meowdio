@@ -801,7 +801,6 @@ fun CustomDropDownMenu(
     )
 }
 
-
 @Composable
 fun DropdownMenuItemTrailingIcon(
     sortOption: SortType,
