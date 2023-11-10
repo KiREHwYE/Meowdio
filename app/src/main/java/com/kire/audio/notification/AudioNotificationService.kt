@@ -85,9 +85,9 @@ class AudioNotificationService(
                     .addAction(if(TrackListViewModel.reason.value) pauseAction else playAction)
                     .addAction(skipNextAction)
                     .setStyle(mediaStyle)
+                    .setOnlyAlertOnce(true)
                     .setContentTitle(if (track.title.length > 25) track.title.take(25) + "..." else track.title)
                     .setContentText(if (track.artist.length > 25) track.artist.take(25) + "..." else track.artist)
-                    .setOngoing(true)
                     .build()
             )
         }

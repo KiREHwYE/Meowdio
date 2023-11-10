@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 
 import androidx.media3.common.Player
 import androidx.media3.common.PlaybackException
-import com.kire.audio.ListSelector
+import com.kire.audio.functional.ListSelector
 
 import com.kire.audio.repository.TrackRepository
 import com.kire.audio.datastore.DataStore

@@ -25,7 +25,7 @@
         <receiver android:name=".notification.NotificationReceiver"/>
 
         <activity
-            android:name=".activities.MainActivity"
+            android:name=".screen.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Audio">
             <intent-filter>
