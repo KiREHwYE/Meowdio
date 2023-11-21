@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.C
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.RenderersFactory
@@ -27,13 +28,13 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
             .setEnableDecoderFallback(true)
     }
 
-    val renderersFactory = buildRenderersFactory(context, true)
-    val trackSelector = DefaultTrackSelector(context)
+    private val renderersFactory = buildRenderersFactory(context, true)
+    private val trackSelector = DefaultTrackSelector(context)
 
 
-    var audioAttributes: AudioAttributes = AudioAttributes.Builder()
+    private var audioAttributes: AudioAttributes = AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)
-        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+        .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
         .build()
 
 
@@ -43,6 +44,27 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
         .build().apply {
             trackSelectionParameters = DefaultTrackSelector.Parameters.Builder(context).build()
             playWhenReady = false
-        }
+            addListener(
+                object : Player.Listener {
 
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        when (playbackState) {
+                            Player.STATE_BUFFERING -> {
+                                this@apply.play()
+                            }
+
+                            Player.STATE_READY -> {
+                                this@apply.play()
+                            }
+
+                            Player.STATE_ENDED -> {
+                                this@apply.stop()
+                            }
+
+                            Player.STATE_IDLE -> { }
+                        }
+                    }
+                }
+            )
+        }
 }

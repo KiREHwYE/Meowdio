@@ -111,11 +111,10 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun Screen(
     track: Track,
-    skipTrack: (SkipTrackAction, Boolean)->Unit,
+    skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
     changeRepeatMode: (Int) -> Unit,
-    changeRepeatCount: (Int) -> Unit,
     durationGet: () -> Float,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     selectList: ListSelector,
@@ -150,7 +149,6 @@ fun Screen(
 
             ShowImageAndText(
                 track = track,
-                changeRepeatCount = changeRepeatCount,
                 sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                 selectListTracks = selectListTracks,
                 selectList = selectList,
@@ -423,12 +421,11 @@ fun convertLongToTime(time: Long): String {
 @Composable
 fun ShowImageAndText(
     track: Track,
-    skipTrack: (SkipTrackAction, Boolean) -> Unit,
+    skipTrack: (SkipTrackAction, Boolean, Boolean) -> Unit,
     selectList: ListSelector,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
-    changeRepeatCount: (Int) -> Unit
 ){
 
     val imageUri = track.imageUri
@@ -467,7 +464,6 @@ fun ShowImageAndText(
             skipTrack = skipTrack,
             selectList = selectList,
             selectListTracks = selectListTracks,
-            changeRepeatCount = changeRepeatCount,
             updateIsLoved = updateIsLoved,
             sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
         )
@@ -478,12 +474,11 @@ fun ShowImageAndText(
 @Composable
 fun TextBlock(
     track: Track,
-    skipTrack: (SkipTrackAction, Boolean)->Unit,
+    skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
     selectList: ListSelector,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     updateIsLoved: (Track) -> Unit,
-    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
-    changeRepeatCount: (Int) -> Unit
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ){
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -548,7 +543,7 @@ fun TextBlock(
                     indication = null
                 ) {
                     if (selectList == ListSelector.FAVOURITE_LIST && track.isFavourite) {
-                        changeRepeatCount(0)
+                        TrackListViewModel.isRepeated.value = false
 
                         if (currentTrackList.size == 1) {
                             coroutineScope.launch(Dispatchers.IO) {
@@ -567,7 +562,7 @@ fun TextBlock(
                                 )
                             }
 
-                            skipTrack(SkipTrackAction.NEXT, true)
+                            skipTrack(SkipTrackAction.NEXT, true, false)
                         }
                     } else {
                         coroutineScope.launch(Dispatchers.IO) {
@@ -636,8 +631,8 @@ fun SliderBlock(
 
             val minutesCur = TimeUnit.MILLISECONDS.toMinutes(exoPlayer.currentPosition)
             val secondsCur = TimeUnit.MILLISECONDS.toSeconds(exoPlayer.currentPosition) % 60
-            val minutesAll = TimeUnit.MILLISECONDS.toMinutes(exoPlayer.duration)
-            val secondsAll = TimeUnit.MILLISECONDS.toSeconds(exoPlayer.duration) % 60
+            val minutesAll = TimeUnit.MILLISECONDS.toMinutes(durationGet().toLong())
+            val secondsAll = TimeUnit.MILLISECONDS.toSeconds(durationGet().toLong()) % 60
 
             Text(
                 text = "$minutesCur:$secondsCur",
@@ -662,7 +657,7 @@ fun SliderBlock(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ControlButtons(
-    skipTrack: (SkipTrackAction, Boolean)->Unit,
+    skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
     exoPlayer: ExoPlayer,
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
@@ -735,7 +730,7 @@ fun ControlButtons(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
-                        skipTrack(SkipTrackAction.PREVIOUS, false)
+                        skipTrack(SkipTrackAction.PREVIOUS, false, false)
                     }
             )
 
@@ -773,7 +768,7 @@ fun ControlButtons(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
-                        skipTrack(SkipTrackAction.NEXT, false)
+                        skipTrack(SkipTrackAction.NEXT, false, false)
                     }
             )
         }
@@ -840,7 +835,7 @@ fun ModalBottomSheetFavouriteTracks(
         tonalElevation = 10.dp,
         containerColor = MaterialTheme.colorScheme.onBackground,
         sheetState = modalBottomSheetState,
-        dragHandle = {}
+        dragHandle = { }
     ) {
 
         Column(
@@ -916,9 +911,10 @@ fun ModalBottomSheetFavouriteTracks(
     }
 }
 
+
 @Composable
 fun FunctionalBlock(
-    skipTrack: (SkipTrackAction, Boolean)->Unit,
+    skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
     currentTrackPlaying: Track?,
     currentTrackPlayingURI: String,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,

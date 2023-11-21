@@ -1,5 +1,7 @@
 package com.kire.audio.screen
 
+import java.util.concurrent.TimeUnit
+
 import android.content.Context
 
 import android.net.Uri
@@ -63,6 +65,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 
@@ -100,10 +103,15 @@ import com.kire.audio.events.SortOptionEvent
 import com.kire.audio.events.SortType
 import com.kire.audio.functional.GetPermissions
 import com.kire.audio.mediaHandling.SkipTrackAction
+import com.kire.audio.functional.ListSelector
+import com.kire.audio.functional.bounceClick
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+
+import kotlin.time.Duration.Companion.seconds
 
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -120,11 +128,7 @@ import androidx.compose.runtime.setValue
 
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
-import com.kire.audio.functional.ListSelector
-import com.kire.audio.functional.bounceClick
-import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
-import kotlin.time.Duration.Companion.seconds
+
 
 @Composable
 fun Item(
@@ -169,11 +173,11 @@ fun Item(
 
                 TrackListViewModel.reason.value.apply {
                     val isPlaying = this
-
                     exoPlayer.apply {
 
                         if (isPlaying && currentUri == uri) {
                             pause()
+                            TrackListViewModel.reason.value = false
                         } else if (!isPlaying && currentUri == uri) {
                             prepare()
                             play()
@@ -184,7 +188,6 @@ fun Item(
                             setMediaItem(newMediaItem)
                             prepare()
                             play()
-
                         } else {
                             pause()
 
@@ -442,9 +445,7 @@ fun ListScreen(
             selectListTracks = viewModel::selectListTracks,
             repeatMode = viewModel.repeatMode,
             changeRepeatMode = viewModel::changeRepeatMode,
-            repeatCount = viewModel.repeatCount,
             currentTrackPlayingURI = currentTrackPlayingURI,
-            changeRepeatCount = viewModel::changeRepeatCount,
             isExpanded = viewModel.isExpanded,
             saveRepeatMode = viewModel::saveRepeatMode,
             changeIsExpanded = viewModel::changeIsExpanded,
@@ -991,8 +992,6 @@ fun BottomPlayer(
     changeRepeatMode: (Int) -> Unit,
     saveRepeatMode: (Int) -> Unit,
     currentTrackPlayingURI: String,
-    repeatCount: StateFlow<Int>,
-    changeRepeatCount: (Int) -> Unit,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     isExpanded: StateFlow<Boolean>,
     exoPlayer: ExoPlayer,
@@ -1007,8 +1006,8 @@ fun BottomPlayer(
     val interactionSource = remember { MutableInteractionSource() }
 
     val track by currentTrackPlaying.collectAsStateWithLifecycle()
-    val selectList by selectList.collectAsStateWithLifecycle()
 
+    val selectList by selectList.collectAsStateWithLifecycle()
     var currentTrackList = selectListTracks(selectList).collectAsStateWithLifecycle().value
 
     if (selectList == ListSelector.FAVOURITE_LIST && currentTrackList.isEmpty()) {
@@ -1017,7 +1016,6 @@ fun BottomPlayer(
     }
 
     val isPlaying by TrackListViewModel.reason.collectAsStateWithLifecycle()
-
     val currentTrackPlaying by currentTrackPlaying.collectAsStateWithLifecycle()
 
     val isShown by isShown.collectAsStateWithLifecycle()
@@ -1026,6 +1024,8 @@ fun BottomPlayer(
     val artist = track?.artist
     val imageUri = track?.imageUri
 
+    val _repeatMode by repeatMode.collectAsStateWithLifecycle()
+
     val isExpanded by isExpanded.collectAsStateWithLifecycle()
 
     var duration: Float by remember { mutableStateOf(0f) }
@@ -1033,6 +1033,7 @@ fun BottomPlayer(
     track?.let {
         duration = it.duration.toFloat()
     } ?: 0f
+
 
     var minutesCur by remember { mutableStateOf(TimeUnit.MILLISECONDS.toMinutes(exoPlayer.currentPosition)) }
     var secondsCur by  remember{ mutableStateOf((TimeUnit.MILLISECONDS.toSeconds(exoPlayer.currentPosition) % 60)) }
@@ -1055,32 +1056,23 @@ fun BottomPlayer(
         }
     )
 
-
-    val skipTrack: (SkipTrackAction, Boolean)->Unit = { skipTrackAction, isPlayerScreenTextBlock ->
-        changeRepeatCount(0)
-
-        val trackINDEXFromSkip = if (trackINDEX == currentTrackList.size)
-            SkipTrackAction.NEXT.action(
-                trackINDEX,
-                currentTrackList.size
-            )
-        else
-            trackINDEX
+    val skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit = { skipTrackAction, isPlayerScreenTextBlock, isRepeated ->
+        TrackListViewModel.isRepeated.value = isRepeated
 
         val newINDEX =
-            skipTrackAction.action(trackINDEXFromSkip, currentTrackList.size)
+            skipTrackAction.action(trackINDEX, currentTrackList.size)
+
+        duration = currentTrackList[newINDEX].duration.toFloat()
 
         sentInfoToBottomSheet(
             currentTrackList[newINDEX],
             selectList,
-            if (!isPlayerScreenTextBlock) newINDEX else if (newINDEX == 0) 0 else trackINDEXFromSkip,
+            if (!isPlayerScreenTextBlock) newINDEX else if (newINDEX == 0) 0 else trackINDEX,
             currentTrackList[newINDEX].path
         )
 
         val newMediaItem =
             MediaItem.fromUri(Uri.parse(currentTrackList[newINDEX].path))
-
-        duration = currentTrackList[newINDEX].duration.toFloat()
 
         exoPlayer.apply {
             if (exoPlayer.isPlaying)
@@ -1092,53 +1084,26 @@ fun BottomPlayer(
         }
     }
     
-    val _repeatMode by repeatMode.collectAsStateWithLifecycle()
-    val _repeatCount by repeatCount.collectAsStateWithLifecycle()
 
-    if (minutesCur.toInt() == minutesAll.toInt()
+    LaunchedEffect(minutesCur.toInt() == minutesAll.toInt()
         && secondsCur.toInt() == secondsAll.toInt() &&
         !(minutesAll.toInt() == 0 && secondsAll.toInt() == 0)
     ) {
 
-        when (_repeatMode) {
-            0 -> {
-                skipTrack(SkipTrackAction.PREVIOUS, false)
-            }
+        if (minutesCur.toInt() == minutesAll.toInt()
+            && secondsCur.toInt() == secondsAll.toInt() &&
+            !(minutesAll.toInt() == 0 && secondsAll.toInt() == 0)
+            )
+                when (_repeatMode) {
+                    0 ->    skipTrack(SkipTrackAction.NEXT, false, false)
 
-            1 -> {
+                    1 ->    if (!TrackListViewModel.isRepeated.value)
+                                skipTrack(SkipTrackAction.REPEAT, false, true)
+                            else
+                                skipTrack(SkipTrackAction.NEXT, false, false)
 
-                exoPlayer.apply {
-
-                    if (_repeatCount < 2) {
-
-                        changeRepeatCount(_repeatCount + 1)
-                        seekTo(0)
-
-                        if (!exoPlayer.isPlaying)
-                            play()
-                        else
-                            pause()
-
-                    } else
-                        skipTrack(SkipTrackAction.NEXT, false)
+                    2 ->    skipTrack(SkipTrackAction.REPEAT, false, false)
                 }
-            }
-
-            2 -> {
-                changeRepeatCount(0)
-
-                exoPlayer.apply {
-
-                    seekTo(0)
-
-                    if (!exoPlayer.isPlaying)
-                        play()
-                    else
-                        pause()
-                }
-
-            }
-        }
     }
 
 
@@ -1315,7 +1280,7 @@ fun BottomPlayer(
                                         interactionSource = interactionSource,
                                         indication = null
                                     ) {
-                                        skipTrack(SkipTrackAction.PREVIOUS, false)
+                                        skipTrack(SkipTrackAction.PREVIOUS, false, false)
                                     }
                             )
 
@@ -1359,7 +1324,7 @@ fun BottomPlayer(
                                         interactionSource = interactionSource,
                                         indication = null
                                     ) {
-                                        skipTrack(SkipTrackAction.NEXT, false)
+                                        skipTrack(SkipTrackAction.NEXT, false, false)
                                     }
                             )
                         }
@@ -1417,7 +1382,6 @@ fun BottomPlayer(
                     selectList = selectList,
                     sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                     exoPlayer = exoPlayer,
-                    changeRepeatCount = changeRepeatCount,
                     durationGet = {
                         duration
                     },

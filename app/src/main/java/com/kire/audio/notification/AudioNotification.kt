@@ -1,19 +1,24 @@
 package com.kire.audio.notification
 
 import android.Manifest
+
 import android.app.PendingIntent
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+
 import android.support.v4.media.session.MediaSessionCompat
+
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+
 import com.kire.audio.R
 import com.kire.audio.models.Track
 import com.kire.audio.viewmodels.TrackListViewModel
 
-class AudioNotificationService(
+class AudioNotification(
     private val context: Context,
     private val notificationBuilder: NotificationCompat.Builder,
     private val notificationManager: NotificationManagerCompat,
@@ -91,5 +96,25 @@ class AudioNotificationService(
                     .build()
             )
         }
+    }
+
+    fun updateNotificationPlayPauseButton() {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        notificationManager.notify(1,
+            notificationBuilder
+                .clearActions()
+                .addAction(skipPreviousAction)
+                .addAction(if(TrackListViewModel.reason.value) pauseAction else playAction)
+                .addAction(skipNextAction)
+                .build()
+        )
+
     }
 }

@@ -13,6 +13,10 @@ enum class SkipTrackAction {
         override fun action(trackINDEX: Int, size: Int) =
             if (trackINDEX == 0) size - 1 else (trackINDEX - 1) % size
 
+    },
+
+    REPEAT {
+        override fun action(trackINDEX: Int, size: Int) = trackINDEX
     };
 
     abstract fun action(trackINDEX: Int, size: Int): Int

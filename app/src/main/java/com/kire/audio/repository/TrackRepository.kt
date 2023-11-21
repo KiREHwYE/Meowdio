@@ -25,8 +25,6 @@ class TrackRepository(
     private val context: Context
 ) {
 
-
-
     private val database by lazy {
         Room.databaseBuilder(
             context.applicationContext,
@@ -38,14 +36,11 @@ class TrackRepository(
     }
 
 
-
     private fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
+
     fun getTrack(id: String): Track = database.dao.getTrack(id)
-
     suspend fun updateIsLoved(track: Track) = database.dao.updateIsLoved(track)
-
     fun getFavouriteTracks(): Flow<List<Track>> = database.dao.getFavouriteTracks()
-
     fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedASC()
     fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedDESC()
@@ -55,12 +50,6 @@ class TrackRepository(
     fun getTracksOrderedByArtistDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistDESC()
     fun getTracksOrderedByDurationASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationASC()
     fun getTracksOrderedByDurationDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationDESC()
-
-
-
-
-
-
 
 
     @SuppressLint("Range")
@@ -118,8 +107,7 @@ class TrackRepository(
 
                     val existingTrack: Track = getTrack(idC)
 
-                    if (
-                        existingTrack != null &&
+                    if (existingTrack != null &&
                         existingTrack.title == titleC &&
                         existingTrack.artist == artistC &&
                         existingTrack.album == albumC &&
@@ -128,19 +116,15 @@ class TrackRepository(
                         existingTrack.duration == durationC &&
                         existingTrack.date_added == date_addedC &&
                         existingTrack.path == pathC
-                    )
-                        continue
+                        )
+                            continue
 
                     upsertTrack(track)
                 }
-
             } while (cursor.moveToNext())
         }
-
         cursor?.close()
     }
-
-
 
     fun deleteTracksFromDatabase(tracks :List<Track>){
         tracks.forEach { track ->

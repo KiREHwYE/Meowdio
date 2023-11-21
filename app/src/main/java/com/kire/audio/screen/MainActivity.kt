@@ -3,31 +3,38 @@ package com.kire.audio.screen
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
+
 import android.net.Uri
+
 import android.os.Build
 import android.os.Bundle
+
 import android.view.Window
 import android.view.WindowManager
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+
 import com.kire.audio.R
 import com.kire.audio.datastore.DataStore
 import com.kire.audio.mediaHandling.AudioPlayer
 import com.kire.audio.mediaHandling.SkipTrackAction
-import com.kire.audio.notification.AudioNotificationService
+import com.kire.audio.notification.AudioNotification
 import com.kire.audio.repository.TrackRepository
 import com.kire.audio.ui.theme.AudioTheme
 import com.kire.audio.viewmodels.TrackListViewModel
@@ -70,7 +77,7 @@ class MainActivity() : ComponentActivity() {
             it.createNotificationChannel(channel)
         }
 
-        val audioNotificationService = AudioNotificationService(
+        val audioNotification = AudioNotification(
             context = this,
             notificationBuilder = notificationBuilder,
             notificationManager = notificationManager
@@ -80,7 +87,7 @@ class MainActivity() : ComponentActivity() {
             dataStore = dataStore,
             trackRepository = trackRepository,
             audioPlayer = audioPlayer,
-            audioNotificationService = audioNotificationService
+            audioNotification = audioNotification
         )
 
         viewModel = ViewModelProvider(this, factory).get(TrackListViewModel::class.java)
@@ -111,27 +118,22 @@ class MainActivity() : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 TrackListViewModel.reason.collect {
-                    if (!it && viewModel.exoPlayer.isPlaying) {
-                        viewModel.exoPlayer.apply {
-                            pause()
-                            TrackListViewModel.reason.value = false
-                        }
-                    } else {
-                        viewModel.exoPlayer.apply {
-                            play()
-                            TrackListViewModel.reason.value = true
-                        }
+                    viewModel.apply {
+                        if (!it)
+                            exoPlayer.pause()
+                        else
+                            exoPlayer.play()
+
+                        updateNotificationPlayPauseButton()
                     }
-                    viewModel.updateNotification()
                 }
             }
         }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 TrackListViewModel.previousTrack.collect {
-                    if (it) {
-                        skip(SkipTrackAction.PREVIOUS, viewModel)
-                    }
+                    if (it)
+                        skipTrack(SkipTrackAction.PREVIOUS, viewModel)
                 }
             }
         }
@@ -139,9 +141,8 @@ class MainActivity() : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 TrackListViewModel.nextTrack.collect {
-                    if (it) {
-                        skip(SkipTrackAction.NEXT, viewModel)
-                    }
+                    if (it)
+                        skipTrack(SkipTrackAction.NEXT, viewModel)
                 }
             }
         }
@@ -154,21 +155,15 @@ class MainActivity() : ComponentActivity() {
     }
 }
 
-fun skip(skipTrackAction: SkipTrackAction, viewModel: TrackListViewModel){
-    viewModel.changeRepeatCount(0)
+private fun skipTrack(skipTrackAction: SkipTrackAction, viewModel: TrackListViewModel){
+    TrackListViewModel.isRepeated.value = false
 
     viewModel.apply {
         val newINDEX =
-
-            if (selectListTracks(selectList.value).value[bottomSheetTrackINDEX.value].imageUri == currentTrackPlaying.value!!.imageUri
-                && selectListTracks(selectList.value).value[bottomSheetTrackINDEX.value].title == currentTrackPlaying.value!!.title
-                && selectListTracks(selectList.value).value[bottomSheetTrackINDEX.value].artist == currentTrackPlaying.value!!.artist
+            skipTrackAction.action(
+                bottomSheetTrackINDEX.value,
+                selectListTracks(selectList.value).value.size
             )
-                skipTrackAction.action(
-                    bottomSheetTrackINDEX.value,
-                    selectListTracks(selectList.value).value.size
-                )
-            else 0
 
         sentInfoToBottomSheet(
             selectListTracks(selectList.value).value[newINDEX],
@@ -195,7 +190,10 @@ fun skip(skipTrackAction: SkipTrackAction, viewModel: TrackListViewModel){
     TrackListViewModel.reason.value = true
 }
 
-fun Window.hideSystemUi(extraAction:(WindowInsetsControllerCompat.() -> Unit)? = null) {
+
+
+
+private fun Window.hideSystemUi(extraAction:(WindowInsetsControllerCompat.() -> Unit)? = null) {
     WindowInsetsControllerCompat(this, this.decorView).let { controller ->
         controller.hide(WindowInsetsCompat.Type.systemBars())
         extraAction?.invoke(controller)

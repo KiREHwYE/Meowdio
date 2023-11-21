@@ -6,8 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 
-import androidx.media3.common.Player
-import androidx.media3.common.PlaybackException
 import com.kire.audio.functional.ListSelector
 
 import com.kire.audio.repository.TrackRepository
@@ -18,7 +16,7 @@ import com.kire.audio.events.SortOptionEvent
 import com.kire.audio.events.SortType
 import com.kire.audio.mediaHandling.AudioPlayer
 import com.kire.audio.models.Track
-import com.kire.audio.notification.AudioNotificationService
+import com.kire.audio.notification.AudioNotification
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,15 +33,15 @@ import kotlinx.coroutines.launch
 class TrackListViewModel(
     private val dataStore: DataStore,
     private val trackRepository: TrackRepository,
-    private val audioPlayer: AudioPlayer,
-    private val audioNotificationService: AudioNotificationService,
+    audioPlayer: AudioPlayer,
+    private val audioNotification: AudioNotification,
 ) : ViewModel(){
 
     class Factory(
         private val dataStore: DataStore,
         private val trackRepository: TrackRepository,
         private val audioPlayer: AudioPlayer,
-        private val audioNotificationService: AudioNotificationService
+        private val audioNotification: AudioNotification
     ): ViewModelProvider.Factory{
         override fun <T:ViewModel> create(modelClass: Class<T>):T{
             if(modelClass.isAssignableFrom(TrackListViewModel::class.java)){
@@ -52,7 +50,7 @@ class TrackListViewModel(
                     dataStore,
                     trackRepository,
                     audioPlayer,
-                    audioNotificationService
+                    audioNotification
                 ) as T
             }
             throw IllegalArgumentException("UNKNOWN VIEW MODEL CLASS")
@@ -99,7 +97,6 @@ class TrackListViewModel(
                 SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList()
             )
-
 
     fun selectListTracks(listSelect: ListSelector): StateFlow<List<Track>> =
         when(listSelect){
@@ -251,45 +248,8 @@ class TrackListViewModel(
     ExoPlayer params and funcs
     * */
 
+    val exoPlayer = audioPlayer.exoPlayer
 
-    private val exoPlayerListener = object : Player.Listener {
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-
-        }
-
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            when (playbackState) {
-                Player.STATE_BUFFERING -> {
-                }
-
-                Player.STATE_READY -> {
-                }
-
-                Player.STATE_ENDED -> {
-                    audioPlayer.exoPlayer.stop()
-                }
-
-                Player.STATE_IDLE -> {
-                }
-            }
-        }
-
-        override fun onPlayerError(error: PlaybackException) {}
-    }
-
-    val exoPlayer = audioPlayer.exoPlayer.apply { addListener(exoPlayerListener) }
-
-
-
-
-
-//    private val _isPlaying = MutableStateFlow(exoPlayer.isPlaying)
-//    val isPlaying: StateFlow<Boolean>
-//        get() = _isPlaying
-//
-//    fun changeIsPlaying(playing: Boolean) {
-//        _isPlaying.value = playing
-//    }
 
     private val _repeatMode = MutableStateFlow(0)
     val repeatMode: StateFlow<Int>
@@ -300,31 +260,28 @@ class TrackListViewModel(
     }
 
 
-    private val _repeatCount = MutableStateFlow(0)
-    val repeatCount: StateFlow<Int>
-        get() = _repeatCount
-
-    fun changeRepeatCount(value: Int) {
-        _repeatCount.value = value
-    }
-
 
 
     /*
-    * Notification funcs
+    * Notification funcs + isRepeated
     * */
 
     companion object {
         val reason = MutableStateFlow(true)
         val nextTrack = MutableStateFlow(false)
         val previousTrack = MutableStateFlow(false)
+
+        val isRepeated = MutableStateFlow(false)
     }
 
 
     fun updateNotification() =
-        audioNotificationService
+        audioNotification
             .updateNotification(currentTrackPlaying.value)
 
+
+    fun updateNotificationPlayPauseButton() =
+        audioNotification.updateNotificationPlayPauseButton()
 
     /*
     * Initialization block
