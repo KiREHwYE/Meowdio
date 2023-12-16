@@ -1,6 +1,8 @@
 package com.kire.audio.screen
 
+import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -10,20 +12,22 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -69,7 +73,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -78,6 +81,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -91,6 +95,8 @@ import com.kire.audio.functional.ListSelector
 
 import com.kire.audio.R
 import com.kire.audio.functional.bounceClick
+import com.kire.audio.functional.convertLongToTime
+import com.kire.audio.functional.getContext
 
 import com.kire.audio.mediaHandling.SkipTrackAction
 import com.kire.audio.models.Track
@@ -129,26 +135,25 @@ fun Screen(
 ){
 
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ){
 
         Background(imageUri = track.imageUri)
 
         Column(modifier = Modifier
-            .padding(10.dp)
-            .fillMaxSize(),
+            .padding(horizontal = 40.dp)
+            .fillMaxWidth()
+            .fillMaxHeight(0.86f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            Header(
-                track = track,
-                changeIsExpanded = changeIsExpanded
-            )
 
             ShowImageAndText(
                 track = track,
+                changeIsExpanded = changeIsExpanded,
                 sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
                 selectListTracks = selectListTracks,
                 selectList = selectList,
@@ -176,10 +181,14 @@ fun Screen(
     }
 }
 
+
 @Composable
 fun Background(
     imageUri: Uri?
 ){
+
+    val context = getContext()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -203,14 +212,14 @@ fun Background(
             contentDescription = "Background Image",
             contentScale = ContentScale.Crop,
             colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply{
-                setToScale(0.45f,0.45f,0.45f,1f)
+                if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
+                    setToScale(0.35f,0.35f,0.35f,1f)
+                else setToScale(0.6f,0.6f,0.6f,1f)
             }),
             modifier = Modifier
-                .fillMaxSize()
-                .blur(12.dp)
+                .fillMaxWidth()
+                .blur(10.dp)
                 .alpha(1f)
-                .height(400.dp)
-                .fillMaxWidth(0.9f)
         )
 
     }
@@ -232,11 +241,11 @@ fun Header(
 
 
     Row(modifier = Modifier
-        .padding(top = 40.dp)
-        .width(340.dp),
+        .fillMaxWidth()
+        .wrapContentHeight(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween)
-    {
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
 
 
         Icon(
@@ -245,16 +254,11 @@ fun Header(
             modifier = Modifier
                 .size(30.dp)
                 .alpha(0.8f)
-                .bounceClick()
-                .pointerInput(Unit, block = {
-                    this.detectTapGestures(
-                        onTap = {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                changeIsExpanded(false)
-                            }
-                        }
-                    )
-                }),
+                .bounceClick {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        changeIsExpanded(false)
+                    }
+                },
             tint = Color.White
         )
 
@@ -264,14 +268,9 @@ fun Header(
             modifier = Modifier
                 .size(30.dp)
                 .alpha(0.8f)
-                .bounceClick()
-                .pointerInput(Unit, block = {
-                    this.detectTapGestures(
-                        onTap = {
-                            isBottomSheetOpened = true
-                        }
-                    )
-                }),
+                .bounceClick {
+                    isBottomSheetOpened = true
+                },
             tint = Color.White
         )
 
@@ -412,15 +411,10 @@ fun ModalBottomSheetTrackInfo(
     }
 }
 
-fun convertLongToTime(time: Long): String {
-    val date = Date(time)
-    val format = SimpleDateFormat("dd|MM|yyyy", Locale.getDefault())
-    return format.format(date)
-}
-
 @Composable
 fun ShowImageAndText(
     track: Track,
+    changeIsExpanded: (Boolean) -> Unit,
     skipTrack: (SkipTrackAction, Boolean, Boolean) -> Unit,
     selectList: ListSelector,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
@@ -432,41 +426,57 @@ fun ShowImageAndText(
 
     Column(
         modifier = Modifier
-            .width(340.dp)
-            .height(458.dp)
-            .padding(bottom = 34.dp),
+            .fillMaxWidth()
+            .fillMaxHeight(0.68f)
+            .padding(bottom = 22.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Crossfade(
-            targetState = imageUri,
-            label = "Track Image in foreground"
+
+        Header(
+            track = track,
+            changeIsExpanded = changeIsExpanded
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(25.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 50.dp)
+                .wrapContentHeight(),
         ) {
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(it)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .allowHardware(true)
-                    .diskCacheKey(it.toString())
-                    .memoryCacheKey(it.toString())
-                    .build(),
-                contentDescription = "Track Image in foreground",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(340.dp, 340.dp)
-                    .clip(RoundedCornerShape(25.dp))
+            Crossfade(
+                targetState = imageUri,
+                label = "Track Image in foreground"
+            ) {
+
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(it)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .allowHardware(true)
+                        .diskCacheKey(it.toString())
+                        .memoryCacheKey(it.toString())
+                        .build(),
+                    contentDescription = "Track Image in foreground",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f / 1f)
+                        .clip(RoundedCornerShape(25.dp))
+                )
+            }
+
+            TextBlock(
+                track = track,
+                skipTrack = skipTrack,
+                selectList = selectList,
+                selectListTracks = selectListTracks,
+                updateIsLoved = updateIsLoved,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
             )
         }
-
-        TextBlock(
-            track = track,
-            skipTrack = skipTrack,
-            selectList = selectList,
-            selectListTracks = selectListTracks,
-            updateIsLoved = updateIsLoved,
-            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
-        )
     }
 }
 
@@ -480,9 +490,6 @@ fun TextBlock(
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ){
-
-    val interactionSource = remember { MutableInteractionSource() }
-
     val title = track.title
     val artist = track.artist
 
@@ -491,9 +498,8 @@ fun TextBlock(
     val coroutineScope = rememberCoroutineScope()
 
     Row(modifier = Modifier
-        .width(332.dp)
-        .height(60.dp)
-        .padding(start = 10.dp),
+        .fillMaxWidth()
+        .wrapContentHeight(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -503,7 +509,7 @@ fun TextBlock(
                 withStyle(
                     style = SpanStyle(
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = 23.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.SansSerif
                     )
@@ -513,7 +519,7 @@ fun TextBlock(
                 withStyle(
                     style = SpanStyle(
                         color = Color.LightGray,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.W300,
                         fontFamily = FontFamily.SansSerif
                     )
@@ -522,6 +528,7 @@ fun TextBlock(
                 }
             },
             modifier = Modifier
+                .padding(start = 6.dp)
                 .fillMaxWidth(0.8f)
                 .alpha(0.8f)
                 .basicMarquee(
@@ -535,13 +542,9 @@ fun TextBlock(
             contentDescription = "Favourite",
             tint = if (track.isFavourite) Color.Red else Color.White,
             modifier = Modifier
-                .size(32.dp)
+                .size(34.dp)
                 .alpha(0.8f)
-                .bounceClick()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
+                .bounceClick {
                     if (selectList == ListSelector.FAVOURITE_LIST && track.isFavourite) {
                         TrackListViewModel.isRepeated.value = false
 
@@ -603,12 +606,13 @@ fun SliderBlock(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 30.dp),
+            .wrapContentHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy((-5).dp)
     ) {
 
-        Slider(
+        Slider(modifier = Modifier
+            .fillMaxWidth(),
             value = sliderPosition,
             onValueChange = {
                 sliderPosition = it
@@ -627,6 +631,7 @@ fun SliderBlock(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
                 .width(323.dp)
+                .wrapContentHeight()
         ) {
 
             val minutesCur = TimeUnit.MILLISECONDS.toMinutes(exoPlayer.currentPosition)
@@ -670,9 +675,6 @@ fun ControlButtons(
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
     play: () -> Unit
 ) {
-
-    val interactionSource = remember { MutableInteractionSource() }
-
     var isBottomSheetOpened by rememberSaveable { mutableStateOf(false) }
 
     val modalBottomSheetState = rememberModalBottomSheetState(
@@ -684,8 +686,8 @@ fun ControlButtons(
     val repeatMode by repeatMode.collectAsStateWithLifecycle()
 
     Row(modifier = Modifier
-        .width(340.dp)
-        .padding(bottom = 80.dp),
+        .fillMaxWidth()
+        .wrapContentHeight(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){
@@ -701,16 +703,11 @@ fun ControlButtons(
             modifier = Modifier
                 .size(30.dp)
                 .alpha(0.7f)
-                .bounceClick()
-                .pointerInput(Unit, block = {
-                    this.detectTapGestures(
-                        onTap = {
-                            changeRepeatMode(((repeatMode + 1) % 3).also { rep ->
-                                saveRepeatMode(rep)
-                            })
-                        }
-                    )
-                })
+                .bounceClick {
+                    changeRepeatMode(((repeatMode + 1) % 3).also { rep ->
+                        saveRepeatMode(rep)
+                    })
+                }
         )
 
         Row(
@@ -725,11 +722,7 @@ fun ControlButtons(
                 modifier = Modifier
                     .size(24.dp)
                     .alpha(0.78f)
-                    .bounceClick()
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
+                    .bounceClick {
                         skipTrack(SkipTrackAction.PREVIOUS, false, false)
                     }
             )
@@ -746,14 +739,9 @@ fun ControlButtons(
                 modifier = Modifier
                     .size(63.dp)
                     .alpha(0.8f)
-                    .bounceClick()
-                    .pointerInput(Unit, block = {
-                        this.detectTapGestures(
-                            onTap = {
-                                play()
-                            }
-                        )
-                    })
+                    .bounceClick {
+                        play()
+                    }
             )
 
             Icon(
@@ -763,11 +751,7 @@ fun ControlButtons(
                 modifier = Modifier
                     .size(24.dp)
                     .alpha(0.78f)
-                    .bounceClick()
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
+                    .bounceClick {
                         skipTrack(SkipTrackAction.NEXT, false, false)
                     }
             )
@@ -779,14 +763,9 @@ fun ControlButtons(
             modifier = Modifier
                 .size(30.dp)
                 .alpha(0.7f)
-                .bounceClick()
-                .pointerInput(Unit, block = {
-                    this.detectTapGestures(
-                        onTap = {
-                            isBottomSheetOpened = true
-                        }
-                    )
-                }),
+                .bounceClick {
+                    isBottomSheetOpened = true
+                },
             tint = Color.White,
         )
 
@@ -931,9 +910,10 @@ fun FunctionalBlock(
 
     Column(
         modifier = Modifier
-        .width(334.dp)
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-
 
         SliderBlock(
             durationGet = durationGet,

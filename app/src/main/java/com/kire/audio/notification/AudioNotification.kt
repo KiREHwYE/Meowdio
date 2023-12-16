@@ -73,6 +73,7 @@ class AudioNotification(
     val mediaSession = MediaSessionCompat(context, "PlayerService")
     val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession.sessionToken)
 
+
     fun updateNotification(currentTrackPlaying: Track?) {
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -115,6 +116,5 @@ class AudioNotification(
                 .addAction(skipNextAction)
                 .build()
         )
-
     }
 }

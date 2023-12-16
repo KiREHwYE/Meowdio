@@ -115,6 +115,7 @@ class MainActivity() : ComponentActivity() {
             }
         }
 
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 TrackListViewModel.reason.collect {
@@ -148,12 +149,14 @@ class MainActivity() : ComponentActivity() {
         }
     }
 
+
     override fun onDestroy() {
         super.onDestroy()
 
         viewModel.exoPlayer.removeListener(listener)
     }
 }
+
 
 private fun skipTrack(skipTrackAction: SkipTrackAction, viewModel: TrackListViewModel){
     TrackListViewModel.isRepeated.value = false

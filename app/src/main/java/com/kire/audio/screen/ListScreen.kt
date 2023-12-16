@@ -10,6 +10,7 @@ import androidx.activity.compose.BackHandler
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -24,7 +25,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -148,8 +148,6 @@ fun Item(
     modifier: Modifier
 ){
 
-    val interactionSource = remember { MutableInteractionSource() }
-
     val title by remember { mutableStateOf(track.title) }
     val artist by remember { mutableStateOf(track.artist) }
     val uri by remember { mutableStateOf(track.path) }
@@ -158,12 +156,7 @@ fun Item(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .bounceClick()
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-
+            .bounceClick {
                 sentInfoToBottomSheet(
                     track,
                     selectList,
@@ -171,32 +164,31 @@ fun Item(
                     uri
                 )
 
-                TrackListViewModel.reason.value.apply {
-                    val isPlaying = this
-                    exoPlayer.apply {
+                exoPlayer.apply {
 
-                        if (isPlaying && currentUri == uri) {
-                            pause()
-                            TrackListViewModel.reason.value = false
-                        } else if (!isPlaying && currentUri == uri) {
-                            prepare()
-                            play()
-                        } else if (!isPlaying) {
+                    val isPlaying = TrackListViewModel.reason.value
 
-                            val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                    if (isPlaying && currentUri == uri) {
+                        pause()
+                        TrackListViewModel.reason.value = false
+                    } else if (!isPlaying && currentUri == uri) {
+                        prepare()
+                        play()
+                    } else if (!isPlaying) {
 
-                            setMediaItem(newMediaItem)
-                            prepare()
-                            play()
-                        } else {
-                            pause()
+                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
 
-                            val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                        setMediaItem(newMediaItem)
+                        prepare()
+                        play()
+                    } else {
+                        pause()
 
-                            setMediaItem(newMediaItem)
-                            prepare()
-                            play()
-                        }
+                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+
+                        setMediaItem(newMediaItem)
+                        prepare()
+                        play()
                     }
                 }
             }
@@ -287,23 +279,18 @@ fun Item(
                     tint = Color.Red,
                     modifier = Modifier
                         .size(26.dp)
-                        .bounceClick()
-                        .pointerInput(Unit, block = {
-                            this.detectTapGestures(
-                                onTap = {
-                                    updateIsLoved(
-                                        track
-                                            .copy(isFavourite = !track.isFavourite)
-                                            .also { track ->
-                                                currentTrackPlaying?.let {
-                                                    if (it.title == title && it.artist == artist && it.path == uri)
-                                                        sentInfoToBottomSheetOneParameter(track)
-                                                }
-                                            }
-                                    )
-                                }
+                        .bounceClick {
+                            updateIsLoved(
+                                track
+                                    .copy(isFavourite = !track.isFavourite)
+                                    .also { track ->
+                                        currentTrackPlaying?.let {
+                                            if (it.title == title && it.artist == artist && it.path == uri)
+                                                sentInfoToBottomSheetOneParameter(track)
+                                        }
+                                    }
                             )
-                        })
+                        }
                 )
             }
         }
@@ -470,7 +457,8 @@ fun ListScreen(
             visible = showButton && !isTrackScreenExpanded,
             enter = slideInHorizontally(initialOffsetX = { 82 }) + fadeIn(
                 animationSpec = tween(
-                    durationMillis = if (isTrackScreenExpanded) 0 else 250
+                    durationMillis = 250,
+                    easing = FastOutSlowInEasing
                 )
             ),
             exit = slideOutHorizontally(targetOffsetX = { 82 }) + fadeOut(
@@ -484,7 +472,7 @@ fun ListScreen(
                 coroutineScope.launch {
                     listState.animateScrollBy(
                         value = -1 * itemSizePx * itemsScrollCount,
-                        animationSpec = tween(durationMillis = 3500)
+                        animationSpec = tween(durationMillis = 4000)
                     )
                 }
             }
@@ -505,15 +493,10 @@ fun ScrollToTopButton(
     ) {
         Box(
             modifier = Modifier
-                .bounceClick()
+                .bounceClick { onClick() }
                 .wrapContentSize()
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryContainer)
-                .pointerInput(Unit, block = {
-                    this.detectTapGestures(
-                        onTap = { onClick() }
-                    )
-                }),
+                .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
 
         ) {
@@ -630,14 +613,7 @@ fun UserActionBar(
                             Icons.Rounded.Refresh,
                             contentDescription = "Refresh",
                             modifier = Modifier
-                                .bounceClick()
-                                .pointerInput(Unit, block = {
-                                    this.detectTapGestures(
-                                        onTap = {
-                                            updateTrackDatabase()
-                                        }
-                                    )
-                                }),
+                                .bounceClick { updateTrackDatabase() },
                             tint = MaterialTheme.colorScheme.outline
                         )
                     }
@@ -704,14 +680,9 @@ fun DropDownMenu(
 
     Box(
         Modifier
-            .bounceClick()
-            .pointerInput(Unit, block = {
-                this.detectTapGestures(
-                    onTap = {
-                        expanded = true
-                    }
-                )
-            })
+            .bounceClick {
+                expanded = true
+            }
     ) {
         Icon(
             Icons.AutoMirrored.Rounded.Sort,
@@ -846,8 +817,6 @@ fun SearchBar(
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit
 ){
 
-    val interactionSource = remember { MutableInteractionSource() }
-
     val searchText by searchText.collectAsStateWithLifecycle()
     val active by active.collectAsStateWithLifecycle()
     val searchResult by selectListTracks(ListSelector.SEARCH_LIST).collectAsStateWithLifecycle()
@@ -882,11 +851,7 @@ fun SearchBar(
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier
                         .size(24.dp)
-                        .bounceClick()
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null
-                        ) {
+                        .bounceClick {
                             if (searchText.isNotEmpty())
                                 onSearchTextChange("")
                             else
@@ -1120,7 +1085,7 @@ fun BottomPlayer(
             animationSpec = tween(durationMillis = 450, easing = LinearOutSlowInEasing)) + fadeIn(animationSpec = tween(durationMillis = 100)),
         exit = slideOutVertically(
             targetOffsetY = { 120 },
-            animationSpec = tween(durationMillis = 450, easing = LinearOutSlowInEasing)) + fadeOut(animationSpec = tween(durationMillis = 90))
+            animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(durationMillis = 90))
     ) {
 
         Card(
@@ -1139,29 +1104,13 @@ fun BottomPlayer(
                         }
                     }
                 }
-//                .pointerInput(Unit) {
-//                    detectHorizontalDragGestures { change, dragAmount ->
-//                        change.consume()
-//                        val x = dragAmount
-//
-//                        if (x < 50) {
-//                            coroutineScope.launch(Dispatchers.IO) {
-//                                skipTrack(SkipTrackAction.PREVIOUS, false)
-//                            }
-//                        }
-//                    }
-//                }
-//                .pointerInput(Unit){
-//                    detectHorizontalDragGestures { change, dragAmount ->
-//                        change.consume()
-//
-//                        val x = dragAmount
-//
-//                        if (x > -50) {
-//                            skipTrack(SkipTrackAction.NEXT, false)
-//                        }
-//                    }
-//                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = {
+                            changeIsExpanded(true)
+                        }
+                    )
+                }
                 .padding(22.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.onBackground
@@ -1175,14 +1124,7 @@ fun BottomPlayer(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(18.dp)
-                    .pointerInput(Unit, block = {
-                        this.detectTapGestures(
-                            onTap = {
-                                changeIsExpanded(true)
-                            }
-                        )
-                    }),
+                    .padding(18.dp),
                 contentAlignment = Alignment.Center
             ) {
 
@@ -1191,11 +1133,11 @@ fun BottomPlayer(
                     enter = fadeIn(
                         animationSpec = tween(
                             durationMillis = 200,
-                            delayMillis = 100,
+                            delayMillis = 90,
                             easing = LinearOutSlowInEasing
                         )
                     ),
-                    exit = fadeOut(animationSpec = tween(0))
+                    exit = fadeOut()
                 ) {
 
                     Row(
@@ -1275,11 +1217,7 @@ fun BottomPlayer(
                                 tint = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
                                     .size(17.dp)
-                                    .bounceClick()
-                                    .clickable(
-                                        interactionSource = interactionSource,
-                                        indication = null
-                                    ) {
+                                    .bounceClick {
                                         skipTrack(SkipTrackAction.PREVIOUS, false, false)
                                     }
                             )
@@ -1294,23 +1232,18 @@ fun BottomPlayer(
                                 tint = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
                                     .size(if (isPlaying) 22.dp else 20.dp)
-                                    .bounceClick()
-                                    .pointerInput(Unit, block = {
-                                        this.detectTapGestures(
-                                            onTap = {
-                                                if (!isPlaying) {
-                                                    exoPlayer.apply {
-                                                        play()
-                                                    }
-                                                } else {
-                                                    exoPlayer.apply {
-                                                        pause()
-                                                        TrackListViewModel.reason.value = false
-                                                    }
-                                                }
+                                    .bounceClick {
+                                        if (!isPlaying) {
+                                            exoPlayer.apply {
+                                                play()
                                             }
-                                        )
-                                    })
+                                        } else {
+                                            exoPlayer.apply {
+                                                pause()
+                                                TrackListViewModel.reason.value = false
+                                            }
+                                        }
+                                    }
                             )
 
                             Icon(
@@ -1319,11 +1252,7 @@ fun BottomPlayer(
                                 tint = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
                                     .size(17.dp)
-                                    .bounceClick()
-                                    .clickable(
-                                        interactionSource = interactionSource,
-                                        indication = null
-                                    ) {
+                                    .bounceClick {
                                         skipTrack(SkipTrackAction.NEXT, false, false)
                                     }
                             )
