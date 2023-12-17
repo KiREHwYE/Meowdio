@@ -76,6 +76,7 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -352,8 +353,8 @@ fun ModalBottomSheetTrackInfo(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Info",
-                    fontWeight = FontWeight.W900,
+                    text = stringResource(id = R.string.info_bottom_sheet_header),
+                    fontWeight = FontWeight.W700,
                     fontSize = 28.sp,
                     fontFamily = FontFamily.SansSerif,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -372,30 +373,32 @@ fun ModalBottomSheetTrackInfo(
             val minutesAll = TimeUnit.MILLISECONDS.toMinutes(track.duration)
             val secondsAll = TimeUnit.MILLISECONDS.toSeconds(track.duration) % 60
 
+            val map = mapOf(
+                stringResource(id = R.string.info_bottom_sheet_title) to track.title,
+                stringResource(id = R.string.info_bottom_sheet_artist) to track.artist,
+                stringResource(id = R.string.info_bottom_sheet_album) to (track.album ?: "0"),
+                stringResource(id = R.string.info_bottom_sheet_duration) to "$minutesAll:$secondsAll",
+                stringResource(id = R.string.info_bottom_sheet_favourite) to if (track.isFavourite) "Yes" else "No",
+                stringResource(id = R.string.info_bottom_sheet_date_added) to convertLongToTime(track.date_added?.toLong() ?: 0),
+                stringResource(id = R.string.info_bottom_sheet_album_id) to track.album_id.toString(),
+                stringResource(id = R.string.info_bottom_sheet_image_uri) to track.imageUri.toString(),
+                stringResource(id = R.string.info_bottom_sheet_path) to track.path
+            )
+
             LazyVerticalGrid(
                 modifier = Modifier
                     .fillMaxSize(),
                 columns = GridCells.Fixed(count = 2),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val map = mapOf(
-                    "Title" to track.title,
-                    "Artist" to track.artist,
-                    "Album" to (track.album ?: "0"),
-                    "Duration" to "$minutesAll:$secondsAll",
-                    "Favourite" to if (track.isFavourite) "Yes" else "No",
-                    "Date Added" to convertLongToTime(track.date_added?.toLong() ?: 0),
-                    "Album ID" to track.album_id.toString(),
-                    "Image URI" to track.imageUri.toString(),
-                    "Path" to track.path
-                )
+
 
                 for(element in map){
                     item {
                         GridElement(
                             text = element.key,
                             switcher = true,
-                            isLastElement = element.key == "Path"
+                            isLastElement = element.key == stringResource(id = R.string.info_bottom_sheet_path)
                         )
                     }
                     item {
@@ -833,8 +836,8 @@ fun ModalBottomSheetFavouriteTracks(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Favourite",
-                    fontWeight = FontWeight.W900,
+                    text = stringResource(id = R.string.favourite_bottom_sheet_header),
+                    fontWeight = FontWeight.W700,
                     fontSize = 28.sp,
                     fontFamily = FontFamily.SansSerif,
                     color = MaterialTheme.colorScheme.onPrimary

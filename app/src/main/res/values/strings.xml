@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Audio</string>
+    <string name="dropdown_date">Date</string>
+    <string name="dropdown_artist">Artist</string>
+    <string name="dropdown_duration">Duration</string>
+    <string name="dropdown_title">Title</string>
+    <string name="listscreen_header">All Music</string>
+    <string name="listscreen_search">Search</string>
+    <string name="info_bottom_sheet_header">Info</string>
+    <string name="info_bottom_sheet_title">Title</string>
+    <string name="info_bottom_sheet_artist">Artist</string>
+    <string name="info_bottom_sheet_album">Album</string>
+    <string name="info_bottom_sheet_duration">Duration</string>
+    <string name="info_bottom_sheet_favourite">Favourite</string>
+    <string name="info_bottom_sheet_date_added">Date Added</string>
+    <string name="info_bottom_sheet_album_id">Album ID</string>
+    <string name="info_bottom_sheet_image_uri">Image URI</string>
+    <string name="info_bottom_sheet_path">Path</string>
+    <string name="favourite_bottom_sheet_header">Favourite</string>
 </resources>

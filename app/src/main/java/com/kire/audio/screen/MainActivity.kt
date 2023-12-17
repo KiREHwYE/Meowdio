@@ -8,6 +8,7 @@ import android.net.Uri
 
 import android.os.Build
 import android.os.Bundle
+import android.support.v4.media.session.MediaSessionCompat
 
 import android.view.Window
 import android.view.WindowManager
@@ -56,14 +57,19 @@ class MainActivity() : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val trackRepository = TrackRepository(this) // Data source
+        val trackRepository = TrackRepository(this)
         val dataStore = DataStore(this)
         val audioPlayer = AudioPlayer(this)
 
+        val mediaSession = MediaSessionCompat(this, "PlayerService")
+        val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession.sessionToken)
+
         val notificationBuilder = NotificationCompat.Builder(this, "Main Channel ID")
             .setContentTitle("Audio Notification")
-            .setContentText("Track is playing")
+            .setContentText("Nothing's playing")
             .setSmallIcon(R.drawable.music_icon)
+            .setStyle(mediaStyle)
+            .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
@@ -105,27 +111,17 @@ class MainActivity() : ComponentActivity() {
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                viewModel.currentTrackPlaying.collect{track ->
-                    track?.let {
-                        viewModel.updateNotification()
-                    }
-                }
-            }
-        }
-
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
-                TrackListViewModel.reason.collect {
+                TrackListViewModel.reason.collect { isPlaying ->
                     viewModel.apply {
-                        if (!it)
+                        updateNotification()
+
+                        if (!isPlaying)
                             exoPlayer.pause()
                         else
                             exoPlayer.play()
-
-                        updateNotificationPlayPauseButton()
                     }
                 }
             }

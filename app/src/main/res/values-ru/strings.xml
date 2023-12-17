@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Audio</string>
+    <string name="dropdown_date">Дата</string>
+    <string name="dropdown_artist">Исполнитель</string>
+    <string name="dropdown_duration">Длительность</string>
+    <string name="dropdown_title">Название</string>
+    <string name="listscreen_header">Аудио</string>
+    <string name="listscreen_search">Поиск</string>
+    <string name="info_bottom_sheet_header">Инфо</string>
+    <string name="info_bottom_sheet_title">Название</string>
+    <string name="info_bottom_sheet_artist">Исплнитель</string>
+    <string name="info_bottom_sheet_album">Альбом</string>
+    <string name="info_bottom_sheet_duration">Длительность</string>
+    <string name="info_bottom_sheet_favourite">Любимое</string>
+    <string name="info_bottom_sheet_date_added">Дата добавления</string>
+    <string name="info_bottom_sheet_album_id">ID альбома</string>
+    <string name="info_bottom_sheet_image_uri">URI картинки</string>
+    <string name="info_bottom_sheet_path">Путь</string>
+    <string name="favourite_bottom_sheet_header">Любимое</string>
+</resources>

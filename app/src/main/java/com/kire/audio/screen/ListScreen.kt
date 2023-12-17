@@ -125,6 +125,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
@@ -528,9 +529,9 @@ fun UpperBlock(){
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "All Music",
+                text = stringResource(id = R.string.listscreen_header),
                 fontSize = 52.sp,
-                fontWeight = FontWeight.W900,
+                fontWeight = FontWeight.W700,
                 fontFamily = FontFamily.SansSerif,
                 color = MaterialTheme.colorScheme.onPrimary
             )
@@ -706,21 +707,21 @@ fun DropDownMenu(
                     sortOption = sortOption,
                     sortTypeASC = SortType.DATA_ASC_ORDER,
                     sortTypeDESC = SortType.DATA_DESC_ORDER,
-                    text = "Date",
+                    text = stringResource(id = R.string.dropdown_date),
                     sortOptionFunc
                 )
                 CustomDropDownMenu(
                     sortOption = sortOption,
                     sortTypeASC = SortType.TITLE_ASC_ORDER,
                     sortTypeDESC = SortType.TITLE_DESC_ORDER,
-                    text = "Title",
+                    text = stringResource(id = R.string.dropdown_title),
                     sortOptionFunc
                 )
                 CustomDropDownMenu(
                     sortOption = sortOption,
                     sortTypeASC = SortType.ARTIST_ASC_ORDER,
                     sortTypeDESC = SortType.ARTIST_DESC_ORDER,
-                    text = "Artist",
+                    text = stringResource(id = R.string.dropdown_artist),
                     sortOptionFunc
                 )
 
@@ -728,7 +729,7 @@ fun DropDownMenu(
                     sortOption = sortOption,
                     sortTypeASC = SortType.DURATION_ASC_ORDER,
                     sortTypeDESC = SortType.DURATION_DESC_ORDER,
-                    text = "Duration",
+                    text = stringResource(id = R.string.dropdown_duration),
                     sortOptionFunc
                 )
             }
@@ -864,7 +865,7 @@ fun SearchBar(
         },
         placeholder = {
             Text(
-                "Search",
+                stringResource(id = R.string.listscreen_search),
                 fontSize = 15.sp,
                 fontFamily = FontFamily.SansSerif,
                 color = MaterialTheme.colorScheme.onPrimary
@@ -967,8 +968,6 @@ fun BottomPlayer(
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-
-    val interactionSource = remember { MutableInteractionSource() }
 
     val track by currentTrackPlaying.collectAsStateWithLifecycle()
 

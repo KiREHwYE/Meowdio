@@ -1,14 +1,13 @@
 package com.kire.audio.notification
 
 import android.Manifest
+import android.annotation.SuppressLint
 
 import android.app.PendingIntent
 
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-
-import android.support.v4.media.session.MediaSessionCompat
 
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -20,7 +19,7 @@ import com.kire.audio.viewmodels.TrackListViewModel
 
 class AudioNotification(
     private val context: Context,
-    private val notificationBuilder: NotificationCompat.Builder,
+    private var notificationBuilder: NotificationCompat.Builder,
     private val notificationManager: NotificationManagerCompat,
 ) {
 
@@ -62,18 +61,19 @@ class AudioNotification(
         R.drawable.baseline_skip_next_24, "Skip Next", skipNextPendingIntent
     ).build()
 
-    private val pauseAction: NotificationCompat.Action = NotificationCompat.Action.Builder(
-        R.drawable.baseline_pause_24, "Pause", pausePendingIntent
+    private val playPauseAction: NotificationCompat.Action = NotificationCompat.Action.Builder(
+        R.drawable.baseline_play_arrow_24, "PlayPause", pausePendingIntent
     ).build()
 
-    private val playAction: NotificationCompat.Action = NotificationCompat.Action.Builder(
-        R.drawable.baseline_play_arrow_24, "Play", pausePendingIntent
-    ).build()
 
-    val mediaSession = MediaSessionCompat(context, "PlayerService")
-    val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession.sessionToken)
+    init {
+        notificationBuilder = notificationBuilder
+            .addAction(skipPreviousAction)
+            .addAction(playPauseAction)
+            .addAction(skipNextAction)
+    }
 
-
+    @SuppressLint("RestrictedApi")
     fun updateNotification(currentTrackPlaying: Track?) {
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -84,37 +84,15 @@ class AudioNotification(
         }
 
         currentTrackPlaying?.let {track ->
+            notificationBuilder.mActions[1] =
+                NotificationCompat.Action(if(TrackListViewModel.reason.value) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24, "PlayPause", pausePendingIntent)
+
             notificationManager.notify(1,
                 notificationBuilder
-                    .clearActions()
-                    .addAction(skipPreviousAction)
-                    .addAction(if(TrackListViewModel.reason.value) pauseAction else playAction)
-                    .addAction(skipNextAction)
-                    .setStyle(mediaStyle)
-                    .setOnlyAlertOnce(true)
                     .setContentTitle(if (track.title.length > 25) track.title.take(25) + "..." else track.title)
                     .setContentText(if (track.artist.length > 25) track.artist.take(25) + "..." else track.artist)
                     .build()
             )
         }
-    }
-
-    fun updateNotificationPlayPauseButton() {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
-
-        notificationManager.notify(1,
-            notificationBuilder
-                .clearActions()
-                .addAction(skipPreviousAction)
-                .addAction(if(TrackListViewModel.reason.value) pauseAction else playAction)
-                .addAction(skipNextAction)
-                .build()
-        )
     }
 }

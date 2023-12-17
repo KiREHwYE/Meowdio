@@ -279,10 +279,6 @@ class TrackListViewModel(
         audioNotification
             .updateNotification(currentTrackPlaying.value)
 
-
-    fun updateNotificationPlayPauseButton() =
-        audioNotification.updateNotificationPlayPauseButton()
-
     /*
     * Initialization block
     * */
