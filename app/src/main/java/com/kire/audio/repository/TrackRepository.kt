@@ -17,6 +17,7 @@ import com.kire.audio.functional.getAlbumart
 import com.kire.audio.models.Track
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 
 import java.io.File
 
@@ -37,7 +38,6 @@ class TrackRepository(
 
 
     private fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
-
     fun getTrack(id: String): Track = database.dao.getTrack(id)
     suspend fun updateIsLoved(track: Track) = database.dao.updateIsLoved(track)
     fun getFavouriteTracks(): Flow<List<Track>> = database.dao.getFavouriteTracks()
@@ -50,7 +50,6 @@ class TrackRepository(
     fun getTracksOrderedByArtistDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByArtistDESC()
     fun getTracksOrderedByDurationASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationASC()
     fun getTracksOrderedByDurationDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDurationDESC()
-
 
     @SuppressLint("Range")
     fun loadTracksToDatabase(context: Context){

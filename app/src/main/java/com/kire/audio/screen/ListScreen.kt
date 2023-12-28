@@ -60,12 +60,16 @@ import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DoNotDisturb
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -127,6 +131,7 @@ import androidx.compose.ui.res.stringResource
 
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
+import kotlinx.coroutines.selects.select
 
 
 @Composable
@@ -223,7 +228,7 @@ fun Item(
                     buildAnnotatedString {
                         withStyle(
                             style = SpanStyle(
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = if (selectList == ListSelector.SEARCH_LIST) Color.Black else MaterialTheme.colorScheme.onPrimary,
                                 fontSize = textTitleSize,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.SansSerif
@@ -397,6 +402,7 @@ fun ListScreen(
                 }
 
                 if (tracks.isNotEmpty()) {
+
                     itemsIndexed(
                         tracks,
                         key = { _, track ->
@@ -595,7 +601,7 @@ fun UserActionBar(
                         .clip(RoundedCornerShape(24.dp))
                         .width(120.dp)
                         .height(56.dp)
-                        .background(color = Color(0x88FF7F50)),
+                        .background(color = MaterialTheme.colorScheme.secondaryContainer),
                     contentAlignment = Alignment.Center
 
                 ) {
@@ -613,7 +619,7 @@ fun UserActionBar(
                             contentDescription = "Refresh",
                             modifier = Modifier
                                 .bounceClick { updateTrackDatabase() },
-                            tint = MaterialTheme.colorScheme.outline
+                            tint = Color.Black
                         )
                     }
                 }
@@ -688,7 +694,7 @@ fun DropDownMenu(
             contentDescription = null,
             modifier = Modifier
                 .size(28.dp),
-            tint = MaterialTheme.colorScheme.outline
+            tint = Color.Black
         )
 
         MaterialTheme(
@@ -833,13 +839,19 @@ fun SearchBar(
         onActiveChange = {
             onActiveChange(it)
         },
+        colors = SearchBarDefaults.colors(
+            containerColor = Color(0xFFEFE9F4),
+            inputFieldColors = TextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+            )
+        ),
         leadingIcon = {
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = "Search",
                 modifier = Modifier
                     .size(24.dp),
-                tint = MaterialTheme.colorScheme.outline
+                tint = Color.Black
             )
         },
         trailingIcon = {
@@ -847,7 +859,7 @@ fun SearchBar(
                 Icon(
                     Icons.Rounded.Close,
                     contentDescription = "Close",
-                    tint = MaterialTheme.colorScheme.outline,
+                    tint = Color.Black,
                     modifier = Modifier
                         .size(24.dp)
                         .bounceClick {
@@ -866,7 +878,7 @@ fun SearchBar(
                 stringResource(id = R.string.listscreen_search),
                 fontSize = 15.sp,
                 fontFamily = FontFamily.SansSerif,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = Color.Black
             )
         },
         modifier = Modifier

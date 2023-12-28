@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Audio</string>
+    <string name="app_name">Meowdio: Music Player</string>
     <string name="dropdown_date">Дата</string>
     <string name="dropdown_artist">Исполнитель</string>
     <string name="dropdown_duration">Длительность</string>

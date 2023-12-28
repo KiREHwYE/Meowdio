@@ -27,6 +27,6 @@ val ButtonDayBlack = Color.Black
 val ButtonNightLightWhite = Color(0xFFD0D0D0)
 
 val ScrollToTopButtonDayWhite = Color.White
-val ScrollToTopButtonNightLightWhite = Color(0xFFD0D0D0)
+val ScrollToTopButtonNightLightWhite = Color.Black
 
-val OrangeAccents = Color(0x88FF7F50)
+val OrangeAccents = Color(0xFFFEBAA1)

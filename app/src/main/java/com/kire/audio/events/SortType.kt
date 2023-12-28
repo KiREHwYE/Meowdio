@@ -10,5 +10,4 @@ enum class SortType {
     ARTIST_DESC_ORDER,
     DURATION_ASC_ORDER,
     DURATION_DESC_ORDER
-
 }

@@ -23,6 +23,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -65,7 +66,6 @@ class TrackListViewModel(
     val sortType : StateFlow<SortType>
         get() = _sortType.asStateFlow()
 
-
     @OptIn(ExperimentalCoroutinesApi::class)
     private val _tracks = _sortType
         .flatMapLatest {sortType ->
@@ -81,6 +81,7 @@ class TrackListViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     fun onEvent(event: SortOptionEvent) {
         when(event){
@@ -103,6 +104,7 @@ class TrackListViewModel(
             ListSelector.MAIN_LIST -> _tracks
             ListSelector.SEARCH_LIST -> _searchResult
             ListSelector.FAVOURITE_LIST -> _favouriteTracks
+            else -> TODO()
         }
 
 

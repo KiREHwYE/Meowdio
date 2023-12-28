@@ -40,6 +40,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 
     val exoPlayer = ExoPlayer.Builder(context, renderersFactory)
         .setTrackSelector(trackSelector)
+        .setHandleAudioBecomingNoisy(true)
         .setAudioAttributes(audioAttributes, true)
         .build().apply {
             trackSelectionParameters = DefaultTrackSelector.Parameters.Builder(context).build()
