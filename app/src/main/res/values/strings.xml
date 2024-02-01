@@ -6,15 +6,16 @@
     <string name="dropdown_title">Title</string>
     <string name="listscreen_header">All Music</string>
     <string name="listscreen_search">Search</string>
-    <string name="info_bottom_sheet_header">Info</string>
-    <string name="info_bottom_sheet_title">Title</string>
-    <string name="info_bottom_sheet_artist">Artist</string>
-    <string name="info_bottom_sheet_album">Album</string>
-    <string name="info_bottom_sheet_duration">Duration</string>
-    <string name="info_bottom_sheet_favourite">Favourite</string>
-    <string name="info_bottom_sheet_date_added">Date Added</string>
-    <string name="info_bottom_sheet_album_id">Album ID</string>
-    <string name="info_bottom_sheet_image_uri">Image URI</string>
-    <string name="info_bottom_sheet_path">Path</string>
-    <string name="favourite_bottom_sheet_header">Favourite</string>
+    <string name="info_dialog_header">Info</string>
+    <string name="info_dialog_title">Title</string>
+    <string name="info_dialog_artist">Artist</string>
+    <string name="info_dialog_album">Album</string>
+    <string name="info_dialog_duration">Duration</string>
+    <string name="info_dialog_favourite">Favourite</string>
+    <string name="info_dialog_date_added">Date Added</string>
+    <string name="info_dialog_album_id">Album ID</string>
+    <string name="info_dialog_image_uri">Image URI</string>
+    <string name="info_dialog_path">Path</string>
+    <string name="favourite_dialog_header">Favourite</string>
+    <string name="lyrics_dialog_header">Lyrics</string>
 </resources>

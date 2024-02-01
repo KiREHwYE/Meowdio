@@ -2,9 +2,11 @@ package com.kire.audio.screen
 
 import android.content.res.Configuration
 import android.net.Uri
+import android.util.Log
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -14,6 +16,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,12 +29,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridItemScope
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.Circle
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -39,17 +49,18 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOn
 import androidx.compose.material.icons.rounded.RepeatOne
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.Card
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +80,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -102,6 +115,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.jsoup.Jsoup
+import java.io.IOException
 
 import java.util.concurrent.TimeUnit
 
@@ -110,6 +125,7 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun Screen(
     track: Track,
+    upsertTrack: (Track) -> Unit,
     skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
@@ -151,8 +167,8 @@ fun Screen(
                 selectListTracks = selectListTracks,
                 selectList = selectList,
                 updateIsLoved = updateIsLoved,
-                skipTrack = skipTrack
-
+                skipTrack = skipTrack,
+                upsertTrack = upsertTrack
             )
 
             FunctionalBlock(
@@ -218,17 +234,17 @@ fun Background(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Header(
     track: Track,
-    changeIsExpanded: (Boolean) -> Unit
+    changeIsExpanded: (Boolean) -> Unit,
+    upsertTrack: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ){
 
-    val modalBottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-    var isBottomSheetOpened by rememberSaveable { mutableStateOf(false) }
+    var openDialog by remember {
+        mutableStateOf(false)
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -262,174 +278,391 @@ fun Header(
                 .size(30.dp)
                 .alpha(0.8f)
                 .bounceClick {
-                    isBottomSheetOpened = true
+                    openDialog = !openDialog
                 },
             tint = Color.White
         )
 
-        if (isBottomSheetOpened){
-            ModalBottomSheetTrackInfo(
+        if (openDialog)
+            DialogInfo(
                 track = track,
-                modalBottomSheetState = modalBottomSheetState,
-                changeBottomSheetOpened = {isOpened ->
-                    isBottomSheetOpened = isOpened
-                }
+                changeOpenDialog = {isIt ->
+                    openDialog = isIt
+                },
+                upsertTrack = upsertTrack,
+                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
             )
-        }
     }
 }
+
 
 @Composable
 fun GridElement(
     text: String,
     switcher: Boolean,
-    isLastElement: Boolean
+    isEnabled: Boolean = false,
+    isEditable: Boolean = false,
+    updateText: ((String) -> Unit)? = null
 ){
+    var newText by rememberSaveable { mutableStateOf(text) }
 
     if (switcher)
         Text(
             text = text,
-            color =  MaterialTheme.colorScheme.onPrimary,
-            fontSize = 22.sp,
+            color = MaterialTheme.colorScheme.onPrimary,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.SansSerif,
-            modifier = Modifier
-                .padding(bottom = if (isLastElement) 14.dp else 0.dp)
         )
     else
-        Text(
-            text = text,
-            color = MaterialTheme.colorScheme.onTertiary,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.W600,
+        BasicTextField(
             modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .padding(bottom = if (isLastElement) 14.dp else 0.dp)
+                .background(
+                    Color.Transparent,
+                    MaterialTheme.shapes.small,
+                )
+                .fillMaxWidth(0.5f),
+            value = newText,
+            onValueChange = {
+                newText = it.also {
+                    if (updateText != null && !newText.equals(text))
+                        updateText(it)
+                }
+            },
+            enabled = isEnabled && isEditable,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            textStyle = LocalTextStyle.current.copy(
+                color = MaterialTheme.colorScheme.onTertiary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.W600,
+            ),
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.weight(1f)) {
+                        innerTextField()
+                    }
+                    if (isEnabled && isEditable)
+                        Icon(
+                            imageVector = Icons.Rounded.Circle,
+                            contentDescription = "",
+                            tint = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier
+                                .size(8.dp)
+                        )
+                }
+            }
         )
-
 }
+
+
+
+private fun LazyGridScope.header(
+    content: @Composable LazyGridItemScope.() -> Unit
+) {
+    item(span = { GridItemSpan(this.maxLineSpan) }, content = content)
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModalBottomSheetTrackInfo(
+fun DialogInfo(
     track: Track,
-    modalBottomSheetState: SheetState,
-    changeBottomSheetOpened: (Boolean) -> Unit
-){
+    changeOpenDialog: (Boolean) -> Unit,
+    upsertTrack: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit
+) {
 
-    ModalBottomSheet(
-        modifier = Modifier
-            .fillMaxHeight(0.5f),
+    val coroutineScope = rememberCoroutineScope()
+
+    val minutesAll = TimeUnit.MILLISECONDS.toMinutes(track.duration)
+    val secondsAll = TimeUnit.MILLISECONDS.toSeconds(track.duration) % 60
+
+    val map = mapOf(
+        stringResource(id = R.string.info_dialog_title) to track.title,
+        stringResource(id = R.string.info_dialog_artist) to track.artist,
+        stringResource(id = R.string.info_dialog_album) to (track.album ?: "0"),
+        stringResource(id = R.string.info_dialog_duration) to "$minutesAll:$secondsAll",
+        stringResource(id = R.string.info_dialog_favourite) to if (track.isFavourite) "Yes" else "No",
+        stringResource(id = R.string.info_dialog_date_added) to convertLongToTime(track.date_added?.toLong() ?: 0),
+        stringResource(id = R.string.info_dialog_album_id) to track.album_id.toString(),
+        stringResource(id = R.string.info_dialog_image_uri) to track.imageUri.toString(),
+        stringResource(id = R.string.info_dialog_path) to track.path
+    )
+
+    var isEnabled by rememberSaveable { mutableStateOf(false) }
+
+    var newTitle by rememberSaveable { mutableStateOf(track.title) }
+    var newArtist by rememberSaveable { mutableStateOf(track.artist) }
+    var newAlbum by rememberSaveable { mutableStateOf(track.album) }
+
+    BasicAlertDialog(
         onDismissRequest = {
-            changeBottomSheetOpened(false)
-        },
-        tonalElevation = 10.dp,
-        containerColor = MaterialTheme.colorScheme.onBackground,
-        sheetState = modalBottomSheetState,
-        dragHandle = {}
+            changeOpenDialog(false)
+        }
     ) {
 
-        Column(
+        LazyVerticalGrid(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 28.dp, start = 32.dp, end = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(26.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxWidth()
+                .fillMaxHeight(0.5f)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(size = 24.dp)
+                ),
+            columns = GridCells.Fixed(count = 2),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(
+                start = 32.dp,
+                end = 32.dp,
+                top = 28.dp,
+                bottom = 28.dp
+            )
         ) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(id = R.string.info_bottom_sheet_header),
-                    fontWeight = FontWeight.W700,
-                    fontSize = 28.sp,
-                    fontFamily = FontFamily.SansSerif,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                HorizontalDivider(
+            header {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth(0.25f)
-                        .clip(
-                            RoundedCornerShape(28.dp)
-                        ),
-                    thickness = 4.dp,
-                    color = MaterialTheme.colorScheme.onTertiary
-                )
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ){
+
+                        Box(modifier = Modifier.size(18.dp)) {  }
+
+                        Text(
+                            text = stringResource(id = R.string.info_dialog_header),
+                            fontWeight = FontWeight.W700,
+                            fontSize = 28.sp,
+                            fontFamily = FontFamily.SansSerif,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+
+                        Icon(
+                            imageVector = if (!isEnabled) Icons.Rounded.Edit else Icons.Rounded.Save,
+                            contentDescription = "",
+                            tint = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .bounceClick {
+                                    isEnabled = !isEnabled.also {
+                                        if (!track.title.equals(newTitle) || !track.artist.equals(newArtist) || !track.album.equals(newAlbum))
+                                            coroutineScope.launch(Dispatchers.Default) {
+                                                upsertTrack(track.copy(title = newTitle, artist = newArtist, album = newAlbum)
+                                                    .also {
+                                                        sentInfoToBottomSheetOneParameter(it)
+                                                    }
+                                                )
+                                            }
+                                    }
+                                }
+                        )
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth(0.25f)
+                            .clip(
+                                RoundedCornerShape(28.dp)
+                            ),
+                        thickness = 4.dp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+                }
             }
 
-            val minutesAll = TimeUnit.MILLISECONDS.toMinutes(track.duration)
-            val secondsAll = TimeUnit.MILLISECONDS.toSeconds(track.duration) % 60
-
-            val map = mapOf(
-                stringResource(id = R.string.info_bottom_sheet_title) to track.title,
-                stringResource(id = R.string.info_bottom_sheet_artist) to track.artist,
-                stringResource(id = R.string.info_bottom_sheet_album) to (track.album ?: "0"),
-                stringResource(id = R.string.info_bottom_sheet_duration) to "$minutesAll:$secondsAll",
-                stringResource(id = R.string.info_bottom_sheet_favourite) to if (track.isFavourite) "Yes" else "No",
-                stringResource(id = R.string.info_bottom_sheet_date_added) to convertLongToTime(track.date_added?.toLong() ?: 0),
-                stringResource(id = R.string.info_bottom_sheet_album_id) to track.album_id.toString(),
-                stringResource(id = R.string.info_bottom_sheet_image_uri) to track.imageUri.toString(),
-                stringResource(id = R.string.info_bottom_sheet_path) to track.path
-            )
-
-            LazyVerticalGrid(
-                modifier = Modifier
-                    .fillMaxSize(),
-                columns = GridCells.Fixed(count = 2),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-
-
-                for(element in map){
-                    item {
-                        GridElement(
-                            text = element.key,
-                            switcher = true,
-                            isLastElement = element.key == stringResource(id = R.string.info_bottom_sheet_path)
-                        )
-                    }
-                    item {
-                        GridElement(
-                            text = element.value,
-                            switcher = false,
-                            isLastElement = element.value == track.path
-                        )
-                    }
+            for(element in map){
+                item {
+                    GridElement(
+                        text = element.key,
+                        switcher = true
+                    )
+                }
+                item {
+                    GridElement(
+                        text = element.value,
+                        switcher = false,
+                        isEnabled = isEnabled,
+                        isEditable = element.key in arrayOf("Title", "Artist", "Album"),
+                        updateText = { newText ->
+                            when(element.key){
+                                "Title" -> newTitle = newText
+                                "Artist" -> newArtist = newText
+                                "Album" -> newAlbum = newText
+                            }
+                        }
+                    )
                 }
             }
         }
     }
 }
 
+enum class CardFace(val angle: Float) {
+    Front(0f) {
+        override val next: CardFace
+            get() = Back
+    },
+    Back(180f) {
+        override val next: CardFace
+            get() = Front
+    };
+
+    abstract val next: CardFace
+}
+
+@Composable
+fun FlipCard(
+    cardFace: CardFace,
+    onClick: (CardFace) -> Unit,
+    modifier: Modifier = Modifier,
+    back: @Composable () -> Unit = {},
+    front: @Composable () -> Unit = {},
+) {
+
+    val rotation = animateFloatAsState(
+        targetValue = cardFace.angle,
+        animationSpec = tween(
+            durationMillis = 600,
+            easing = FastOutSlowInEasing,
+        ),
+        label = "Flip"
+    )
+
+    Card(
+        onClick = { onClick(cardFace) },
+        modifier = modifier
+            .graphicsLayer {
+                rotationY = -rotation.value
+                cameraDistance = 12f * density
+            },
+    ) {
+
+        if (rotation.value <= 90f) {
+            Box(
+                Modifier.fillMaxSize()
+            ) {
+                front()
+            }
+        } else {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        rotationY = 180f
+                    },
+            ) {
+                back()
+            }
+        }
+    }
+}
+
+
 @Composable
 fun ShowImageAndText(
     track: Track,
+    upsertTrack: (Track) -> Unit,
     changeIsExpanded: (Boolean) -> Unit,
     skipTrack: (SkipTrackAction, Boolean, Boolean) -> Unit,
     selectList: ListSelector,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     updateIsLoved: (Track) -> Unit,
-    sentInfoToBottomSheetOneParameter: (Track) -> Unit,
+    sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ){
 
     val imageUri = track.imageUri
 
+    val coroutineScope = rememberCoroutineScope()
+
+    val lyrics = rememberSaveable{ mutableStateOf(track.lyrics) }
+
+    var isEnabled by rememberSaveable { mutableStateOf(false) }
+
+    val lyricsRequest: () -> Unit = {
+
+        coroutineScope.launch(Dispatchers.IO) {
+
+            try {
+
+                val allowedCharacters = "[^\\sa-zA-Z_-]".toRegex()
+                val hyphen = "[\\s_]+".toRegex()
+
+                val title =
+                    track.title.lowercase().replace("&", "and").replace(allowedCharacters, "")
+                        .replace(hyphen, "-").run {
+                            if (this.contains("feat")) this.removeRange(
+                                this.indexOf("feat") - 1,
+                                this.length
+                            ) else this
+                        }
+
+                val artist =
+                    track.artist.lowercase().replace(allowedCharacters, "").replace(hyphen, "-")
+                        .replaceFirstChar(Char::titlecase).run {
+                            if (this.contains("feat")) this.removeRange(
+                                this.indexOf("feat") - 1,
+                                this.length
+                            ) else this
+                        }
+
+                val url =
+                    if (lyrics.value.contains("genius.com"))
+                        lyrics.value.also { Log.d("MINE", it) }
+                    else
+                        ("https://genius.com/$artist-$title-lyrics").replace("--+".toRegex(), "-")
+
+
+                var doc: org.jsoup.nodes.Document =
+                    Jsoup.connect(url).userAgent("Mozilla").get()
+                val temp = doc.html().replace("<br>", "$$$")
+                doc = Jsoup.parse(temp)
+
+                val elements = doc.select("div[class=Lyrics__Container-sc-1ynbvzw-1 kUgSbL]")
+
+                var text = ""
+
+                for (i in 0 until elements.size)
+                    text += elements.eq(i).text().replace("$$$", "\n")
+
+                lyrics.value = text
+                Log.d("MINE", text)
+
+                upsertTrack(track.copy(lyrics = lyrics.value))
+
+            } catch (e: IOException) {
+
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        lyricsRequest()
+    }
+
     Column(
         modifier = Modifier
+            .padding(bottom = 14.dp)
             .fillMaxWidth()
-            .fillMaxHeight(0.68f)
+            .fillMaxHeight(0.75f)
             .padding(bottom = 22.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
 
         Header(
             track = track,
-            changeIsExpanded = changeIsExpanded
+            changeIsExpanded = changeIsExpanded,
+            upsertTrack = upsertTrack,
+            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
         )
 
         Column(
@@ -445,21 +678,164 @@ fun ShowImageAndText(
                 label = "Track Image in foreground"
             ) {
 
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(it)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .allowHardware(true)
-                        .diskCacheKey(it.toString())
-                        .memoryCacheKey(it.toString())
-                        .build(),
-                    contentDescription = "Track Image in foreground",
-                    contentScale = ContentScale.Crop,
+                var cardFace by remember {
+                    mutableStateOf(CardFace.Front)
+                }
+
+                FlipCard(
+                    cardFace = cardFace,
+                    onClick = {
+                        if (!isEnabled)
+                            cardFace = cardFace.next
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f / 1f)
-                        .clip(RoundedCornerShape(25.dp))
+                        .clip(RoundedCornerShape(25.dp)),
+                    front = {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(it)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .allowHardware(true)
+                                .diskCacheKey(it.toString())
+                                .memoryCacheKey(it.toString())
+                                .build(),
+                            contentDescription = "Track Image in foreground",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(25.dp))
+                        )
+                    },
+                    back = {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(size = 25.dp)
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(26.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 28.dp, start = 32.dp, end = 32.dp)
+                                        .height(56.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ){
+
+                                        Box(
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                        ) {
+                                            if (isEnabled)
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Delete,
+                                                    contentDescription = "",
+                                                    tint = MaterialTheme.colorScheme.secondaryContainer,
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .bounceClick {
+                                                            lyrics.value = ""
+                                                        }
+                                                )
+                                        }
+
+                                        Text(
+                                            text = "Lyrics",
+                                            fontWeight = FontWeight.W700,
+                                            fontSize = 28.sp,
+                                            fontFamily = FontFamily.SansSerif,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+
+                                        Icon(
+                                            imageVector = if (!isEnabled) Icons.Rounded.Edit else Icons.Rounded.Save,
+                                            contentDescription = "",
+                                            tint = MaterialTheme.colorScheme.secondaryContainer,
+                                            modifier = Modifier
+                                                .size(18.dp)
+                                                .bounceClick {
+                                                    isEnabled = !isEnabled.also {
+                                                        if (!lyrics.equals(track.lyrics))
+                                                            if (lyrics.value.contains("genius.com"))
+                                                                lyricsRequest()
+                                                            else {
+                                                                coroutineScope.launch(Dispatchers.Default) {
+                                                                    upsertTrack(track.copy(lyrics = lyrics.value))
+                                                                }
+                                                            }
+                                                    }
+                                                }
+                                        )
+                                    }
+
+                                    HorizontalDivider(
+                                        modifier = Modifier
+                                            .fillMaxWidth(0.25f)
+                                            .clip(
+                                                RoundedCornerShape(28.dp)
+                                            ),
+                                        thickness = 4.dp,
+                                        color = MaterialTheme.colorScheme.onTertiary
+                                    )
+                                }
+                            }
+
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(start = 32.dp, end = 32.dp, bottom = 28.dp),
+                                    contentAlignment = Alignment.Center
+                                ){
+                                    BasicTextField(
+                                        modifier = Modifier
+                                            .background(
+                                                Color.Transparent,
+                                                MaterialTheme.shapes.small,
+                                            )
+                                            .fillMaxWidth(),
+                                        value = lyrics.value,
+                                        onValueChange = {
+                                            lyrics.value = it
+                                        },
+                                        enabled = isEnabled,
+                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                        textStyle = LocalTextStyle.current.copy(
+                                            color = MaterialTheme.colorScheme.onTertiary,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.W600,
+                                        ),
+                                        decorationBox = { innerTextField ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Box(Modifier.weight(1f)) {
+                                                    innerTextField()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    },
                 )
             }
 
@@ -492,58 +868,84 @@ fun TextBlock(
 
     val coroutineScope = rememberCoroutineScope()
 
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-        Text(
-            buildAnnotatedString {
-                withStyle(
-                    style = SpanStyle(
-                        color = Color.White,
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.SansSerif
+            Text(
+                buildAnnotatedString {
+                    withStyle(
+                        style = SpanStyle(
+                            color = Color.White,
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    ) {
+                        append(title)
+                    }
+                    withStyle(
+                        style = SpanStyle(
+                            color = Color.LightGray,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.W300,
+                            fontFamily = FontFamily.SansSerif
+                        )
+                    ) {
+                        append("\n" + artist)
+                    }
+                },
+                modifier = Modifier
+                    .padding(start = 6.dp)
+                    .fillMaxWidth(0.8f)
+                    .alpha(0.8f)
+                    .basicMarquee(
+                        animationMode = MarqueeAnimationMode.Immediately,
+                        delayMillis = 0
                     )
-                ) {
-                    append(title)
-                }
-                withStyle(
-                    style = SpanStyle(
-                        color = Color.LightGray,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.W300,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                ) {
-                    append("\n" + artist)
-                }
-            },
-            modifier = Modifier
-                .padding(start = 6.dp)
-                .fillMaxWidth(0.8f)
-                .alpha(0.8f)
-                .basicMarquee(
-                    animationMode = MarqueeAnimationMode.Immediately,
-                    delayMillis = 0
-                )
-        )
+            )
 
-        Icon(
-            if (track.isFavourite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-            contentDescription = "Favourite",
-            tint = if (track.isFavourite) Color.Red else Color.White,
-            modifier = Modifier
-                .size(34.dp)
-                .alpha(0.8f)
-                .bounceClick {
-                    if (selectList == ListSelector.FAVOURITE_LIST && track.isFavourite) {
-                        TrackListViewModel.isRepeated.value = false
+            Icon(
+                if (track.isFavourite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                contentDescription = "Favourite",
+                tint = if (track.isFavourite) Color.Red else Color.White,
+                modifier = Modifier
+                    .size(34.dp)
+                    .alpha(0.8f)
+                    .bounceClick {
+                        if (selectList == ListSelector.FAVOURITE_LIST && track.isFavourite) {
+                            TrackListViewModel.isRepeated.value = false
 
-                        if (currentTrackList.size == 1) {
+                            if (currentTrackList.size == 1) {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    updateIsLoved(
+                                        track
+                                            .copy(isFavourite = !track.isFavourite)
+                                            .also {
+                                                sentInfoToBottomSheetOneParameter(it)
+                                            }
+                                    )
+                                }
+                            } else {
+                                coroutineScope.launch(Dispatchers.IO) {
+                                    updateIsLoved(
+                                        track.copy(isFavourite = !track.isFavourite)
+                                    )
+                                }
+
+                                skipTrack(SkipTrackAction.NEXT, true, false)
+                            }
+                        } else {
                             coroutineScope.launch(Dispatchers.IO) {
                                 updateIsLoved(
                                     track
@@ -553,32 +955,12 @@ fun TextBlock(
                                         }
                                 )
                             }
-                        } else {
-                            coroutineScope.launch(Dispatchers.IO) {
-                                updateIsLoved(
-                                    track.copy(isFavourite = !track.isFavourite)
-                                )
-                            }
-
-                            skipTrack(SkipTrackAction.NEXT, true, false)
-                        }
-                    } else {
-                        coroutineScope.launch(Dispatchers.IO) {
-                            updateIsLoved(
-                                track
-                                    .copy(isFavourite = !track.isFavourite)
-                                    .also {
-                                        sentInfoToBottomSheetOneParameter(it)
-                                    }
-                            )
                         }
                     }
-                }
-        )
+            )
+        }
     }
 }
-
-
 
 
 @Composable
@@ -654,7 +1036,6 @@ fun SliderBlock(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ControlButtons(
     skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
@@ -670,11 +1051,10 @@ fun ControlButtons(
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
     play: () -> Unit
 ) {
-    var isBottomSheetOpened by rememberSaveable { mutableStateOf(false) }
 
-    val modalBottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    var openDialog by remember {
+        mutableStateOf(false)
+    }
 
     val isPlaying by TrackListViewModel.reason.collectAsStateWithLifecycle()
 
@@ -759,132 +1139,126 @@ fun ControlButtons(
                 .size(30.dp)
                 .alpha(0.7f)
                 .bounceClick {
-                    isBottomSheetOpened = true
+                    openDialog = !openDialog
                 },
             tint = Color.White,
         )
 
-        if (isBottomSheetOpened){
-            ModalBottomSheetFavouriteTracks(
+
+        if (openDialog)
+            DialogFavourite(
                 exoPlayer = exoPlayer,
-                modalBottomSheetState = modalBottomSheetState,
                 favouriteTracks = selectListTracks(ListSelector.FAVOURITE_LIST),
                 sentInfoToBottomSheet = sentInfoToBottomSheet,
                 currentTrackPlayingURI = currentTrackPlayingURI,
                 currentTrackPlaying = currentTrackPlaying,
                 updateIsLoved = updateIsLoved,
                 sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
-                changeBottomSheetOpened = {isOpened ->
-                    isBottomSheetOpened = isOpened
+                changeOpenDialog = {isIt ->
+                    openDialog = isIt
                 }
             )
-        }
-
     }
 }
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ModalBottomSheetFavouriteTracks(
+fun DialogFavourite(
     exoPlayer: ExoPlayer,
-    modalBottomSheetState: SheetState,
     favouriteTracks: StateFlow<List<Track>>,
     currentTrackPlaying: Track?,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
     currentTrackPlayingURI: String,
-    changeBottomSheetOpened: (Boolean) -> Unit
-){
-
+    changeOpenDialog: (Boolean) -> Unit
+) {
     val favouriteTracks by favouriteTracks.collectAsStateWithLifecycle()
 
-    ModalBottomSheet(
-        modifier = Modifier
-            .fillMaxHeight(0.5f),
+    BasicAlertDialog(
         onDismissRequest = {
-            changeBottomSheetOpened(false)
-        },
-        tonalElevation = 10.dp,
-        containerColor = MaterialTheme.colorScheme.onBackground,
-        sheetState = modalBottomSheetState,
-        dragHandle = { }
+            changeOpenDialog(false)
+        }
     ) {
 
-        Column(
+        LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 28.dp, start = 32.dp, end = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
+                .fillMaxWidth()
+                .fillMaxHeight(0.5f)
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(size = 24.dp)
+                ),
+            contentPadding = PaddingValues(
+                start = 32.dp,
+                end = 32.dp,
+                bottom = 28.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(id = R.string.favourite_bottom_sheet_header),
-                    fontWeight = FontWeight.W700,
-                    fontSize = 28.sp,
-                    fontFamily = FontFamily.SansSerif,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-                HorizontalDivider(
+            item {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth(0.25f)
-                        .clip(
-                            RoundedCornerShape(28.dp)
-                        ),
-                    thickness = 4.dp,
-                    color = MaterialTheme.colorScheme.onTertiary
-                )
+                        .fillMaxWidth()
+                        .padding(top = 28.dp, start = 32.dp, end = 32.dp)
+                        .height(56.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.favourite_dialog_header),
+                        fontWeight = FontWeight.W700,
+                        fontSize = 28.sp,
+                        fontFamily = FontFamily.SansSerif,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth(0.25f)
+                            .clip(
+                                RoundedCornerShape(28.dp)
+                            ),
+                        thickness = 4.dp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+                }
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                content = {
-
-                    itemsIndexed(
-                        favouriteTracks,
-                        key = { _, track ->
-                            track.id
-                        }
-                    ) { index, track ->
-                        Item(
-                            track = track,
-                            selectList = ListSelector.FAVOURITE_LIST,
-                            exoPlayer = exoPlayer,
-                            currentUri = currentTrackPlayingURI,
-                            trackINDEX = index,
-                            currentTrackPlaying = currentTrackPlaying,
-                            updateIsLoved = updateIsLoved,
-                            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
-                            sentInfoToBottomSheet = sentInfoToBottomSheet,
-                            modifier = Modifier.animateItemPlacement(
-                                animationSpec = tween(
-                                    durationMillis = 400,
-                                    easing = FastOutSlowInEasing
-                                )
-                            ),
-                            imageSize = 60.dp,
-                            textTitleSize = 19.sp,
-                            textArtistSize = 15.sp,
-                            startPadding = 17.dp
-                        )
-                    }
+            itemsIndexed(
+                favouriteTracks,
+                key = { _, track ->
+                    track.id
                 }
-            )
+            ) { index, track ->
+                Item(
+                    track = track,
+                    selectList = ListSelector.FAVOURITE_LIST,
+                    exoPlayer = exoPlayer,
+                    currentUri = currentTrackPlayingURI,
+                    trackINDEX = index,
+                    currentTrackPlaying = currentTrackPlaying,
+                    updateIsLoved = updateIsLoved,
+                    sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter,
+                    sentInfoToBottomSheet = sentInfoToBottomSheet,
+                    modifier = Modifier.animateItemPlacement(
+                        animationSpec = tween(
+                            durationMillis = 400,
+                            easing = FastOutSlowInEasing
+                        )
+                    ),
+                    imageSize = 54.dp,
+                    textTitleSize = 15.sp,
+                    textArtistSize = 11.sp,
+                    startPadding = 13.dp,
+                    heartIconSize = 22.dp
+                )
+            }
         }
     }
 }
-
 
 @Composable
 fun FunctionalBlock(

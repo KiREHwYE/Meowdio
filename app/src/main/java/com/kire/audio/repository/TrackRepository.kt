@@ -17,7 +17,6 @@ import com.kire.audio.functional.getAlbumart
 import com.kire.audio.models.Track
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 
 import java.io.File
 
@@ -37,7 +36,7 @@ class TrackRepository(
     }
 
 
-    private fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
+    fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
     fun getTrack(id: String): Track = database.dao.getTrack(id)
     suspend fun updateIsLoved(track: Track) = database.dao.updateIsLoved(track)
     fun getFavouriteTracks(): Flow<List<Track>> = database.dao.getFavouriteTracks()
@@ -106,17 +105,8 @@ class TrackRepository(
 
                     val existingTrack: Track = getTrack(idC)
 
-                    if (existingTrack != null &&
-                        existingTrack.title == titleC &&
-                        existingTrack.artist == artistC &&
-                        existingTrack.album == albumC &&
-                        existingTrack.album_id == album_idC &&
-                        existingTrack.imageUri == imageUriC &&
-                        existingTrack.duration == durationC &&
-                        existingTrack.date_added == date_addedC &&
-                        existingTrack.path == pathC
-                        )
-                            continue
+                    if (existingTrack != null && existingTrack.path == pathC)
+                        continue
 
                     upsertTrack(track)
                 }

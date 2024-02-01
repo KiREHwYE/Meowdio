@@ -10,6 +10,7 @@ data class Track(
     val album: String?,
     val artist: String,
     val duration: Long = 0,
+    var lyrics: String = "",
     val path: String,
     val album_id: Long?,
     val imageUri: Uri?,

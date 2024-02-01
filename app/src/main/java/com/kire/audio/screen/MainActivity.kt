@@ -3,34 +3,26 @@ package com.kire.audio.screen
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
-
 import android.net.Uri
-
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
-
 import android.view.Window
 import android.view.WindowManager
-
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-
 import com.kire.audio.R
 import com.kire.audio.datastore.DataStore
 import com.kire.audio.mediaHandling.AudioPlayer
@@ -39,8 +31,8 @@ import com.kire.audio.notification.AudioNotification
 import com.kire.audio.repository.TrackRepository
 import com.kire.audio.ui.theme.AudioTheme
 import com.kire.audio.viewmodels.TrackListViewModel
-
 import kotlinx.coroutines.launch
+
 
 @UnstableApi
 class MainActivity() : ComponentActivity() {

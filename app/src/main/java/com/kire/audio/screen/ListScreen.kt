@@ -146,6 +146,7 @@ fun Item(
     textTitleSize: TextUnit = 17.sp,
     textArtistSize: TextUnit = 13.sp,
     startPadding: Dp = 16.dp,
+    heartIconSize: Dp = 24.dp,
     modifier: Modifier
 ){
 
@@ -237,7 +238,7 @@ fun Item(
                                         if (length > 12) take(12) + "..." else this
 
                                     else if (selectList == ListSelector.FAVOURITE_LIST)
-                                        if (length > 16) take(16) + "..." else this
+                                        if (length > 13) take(13) + "..." else this
 
                                     else {
                                         if (length > 27) take(27) + "..." else this
@@ -259,7 +260,7 @@ fun Item(
                                             if (length > 12) take(12) + "..." else this
 
                                         else if (selectList == ListSelector.FAVOURITE_LIST)
-                                            if (length > 16) take(16) + "..." else this
+                                            if (length > 13) take(13) + "..." else this
 
                                         else {
                                             if (length > 27) take(27) + "..." else this
@@ -279,7 +280,7 @@ fun Item(
                     contentDescription = "Favourite",
                     tint = Color.Red,
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(heartIconSize)
                         .bounceClick {
                             updateIsLoved(
                                 track
@@ -324,10 +325,12 @@ fun OnScrollListener(
     }
 }
 
+
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListScreen(
-    viewModel: TrackListViewModel
+    viewModel: TrackListViewModel,
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -337,7 +340,6 @@ fun ListScreen(
     val trackINDEX by viewModel.bottomSheetTrackINDEX.collectAsStateWithLifecycle()
 
     val currentTrackPlayingURI by viewModel.currentTrackPlayingURI.collectAsStateWithLifecycle()
-
 
     val showButton by remember {
         derivedStateOf {
@@ -361,6 +363,8 @@ fun ListScreen(
             lifecycleOwner = LocalLifecycleOwner.current,
             loadTracksToDatabase = viewModel::loadTracksToDatabase
         )
+
+
 
         LazyColumn(
             state = listState,
@@ -429,6 +433,7 @@ fun ListScreen(
 
         BottomPlayer(
             currentTrackPlaying = viewModel.currentTrackPlaying,
+            upsertTrack = viewModel::upsertTrack,
             trackINDEX = trackINDEX,
             selectList = viewModel.selectList,
             selectListTracks = viewModel::selectListTracks,
@@ -444,7 +449,7 @@ fun ListScreen(
             changeIsShown = viewModel::changeIsShown,
             exoPlayer = viewModel.exoPlayer,
             changeSelectList = viewModel::changeSelectList,
-            sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet,
+            sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
         )
 
 
@@ -840,6 +845,8 @@ fun SearchBar(
             containerColor = Color(0xFFEFE9F4),
             inputFieldColors = TextFieldDefaults.colors(
                 focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black,
+                disabledTextColor = Color.Black
             )
         ),
         leadingIcon = {
@@ -887,7 +894,12 @@ fun SearchBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.4f),
-            contentPadding = PaddingValues(20.dp),
+            contentPadding = PaddingValues(
+                start = 20.dp,
+                end = 20.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = {
@@ -957,6 +969,7 @@ fun Updater(
 @Composable
 fun BottomPlayer(
     currentTrackPlaying: StateFlow<Track?>,
+    upsertTrack: (Track) -> Unit,
     selectList: StateFlow<ListSelector>,
     trackINDEX: Int,
     updateIsLoved: (Track) -> Unit,
@@ -1099,8 +1112,7 @@ fun BottomPlayer(
                 .fillMaxWidth()
                 .height(124.dp)
                 .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
+                    detectDragGestures { _, dragAmount ->
                         val (x, y) = dragAmount
 
                         if (y > 10 && x < 60 && x > -60) {
@@ -1306,6 +1318,7 @@ fun BottomPlayer(
 
                 Screen(
                     track = track!!,
+                    upsertTrack = upsertTrack,
                     skipTrack = skipTrack,
                     saveRepeatMode = saveRepeatMode,
                     repeatMode = repeatMode,

@@ -25,7 +25,8 @@ fun GetPermissions(
         permissions = listOf(
             android.Manifest.permission.READ_EXTERNAL_STORAGE,
             android.Manifest.permission.READ_MEDIA_AUDIO,
-            android.Manifest.permission.POST_NOTIFICATIONS
+            android.Manifest.permission.POST_NOTIFICATIONS,
+            android.Manifest.permission.INTERNET
         )
     )
 

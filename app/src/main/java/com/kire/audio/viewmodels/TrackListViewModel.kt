@@ -138,7 +138,7 @@ class TrackListViewModel(
             trackRepository.updateIsLoved(track)
         }
     }
-
+    fun upsertTrack(track: Track) = trackRepository.upsertTrack(track)
 
 
 
