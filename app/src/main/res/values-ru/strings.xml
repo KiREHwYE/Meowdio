@@ -19,4 +19,14 @@
     <string name="info_dialog_path">Путь</string>
     <string name="favourite_dialog_header">Любимое</string>
     <string name="lyrics_dialog_header">Текст</string>
+    <string name="lyrics_dialog_waiting_message">Ожидание получения\nтекста песни.</string>
+    <string name="lyrics_dialog_unsuccessful_message">
+        Текст песни не может быть получен.\n\n
+
+        1) Проверьте подключение к интернету.\n\n
+        2) Проверьте, что имя автора и название трека состоит только из латинских символов, цифр и специальных знаков.\n\n
+        3) Проверьте, чтобы в имени автора или названии не было ошибок.\n\n
+
+        Вы можете написать ссылку на страницу на сайте Genius с текстом нужной песни, написать текст самим или использовать запись \"data--atrist title\" для автоматического поиска текста.
+    </string>
 </resources>

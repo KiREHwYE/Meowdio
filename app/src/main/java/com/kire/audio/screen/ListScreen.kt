@@ -125,6 +125,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 
 import androidx.media3.exoplayer.ExoPlayer
@@ -215,6 +216,7 @@ fun Item(
                         .memoryCacheKey(imageUri.toString())
                         .build(),
                     placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                    contentScale = ContentScale.Crop,
                     contentDescription = "Track Image",
                     modifier = Modifier
                         .height(imageSize)
@@ -235,13 +237,13 @@ fun Item(
                             append(
                                 with(title) {
                                     if (selectList == ListSelector.SEARCH_LIST)
-                                        if (length > 12) take(12) + "..." else this
+                                        if (length > 11) take(11) + "..." else this
 
                                     else if (selectList == ListSelector.FAVOURITE_LIST)
                                         if (length > 13) take(13) + "..." else this
 
                                     else {
-                                        if (length > 27) take(27) + "..." else this
+                                        if (length > 23) take(23) + "..." else this
                                     }
                                 }
                             )
@@ -257,13 +259,13 @@ fun Item(
                             append("\n" +
                                     with(artist) {
                                         if (selectList == ListSelector.SEARCH_LIST)
-                                            if (length > 12) take(12) + "..." else this
+                                            if (length > 11) take(11) + "..." else this
 
                                         else if (selectList == ListSelector.FAVOURITE_LIST)
                                             if (length > 13) take(13) + "..." else this
 
                                         else {
-                                            if (length > 27) take(27) + "..." else this
+                                            if (length > 23) take(23) + "..." else this
                                         }
                                     }
                             )
@@ -327,7 +329,6 @@ fun OnScrollListener(
 
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListScreen(
     viewModel: TrackListViewModel,
@@ -376,30 +377,31 @@ fun ListScreen(
             content = {
 
                 item {
-                    UpperBlock()
-                }
-
-                item {
-                    UserActionBar(
-                        currentUri = currentTrackPlayingURI,
-                        exoPlayer = viewModel.exoPlayer,
-                        searchText = viewModel.searchText,
-                        active = viewModel.active,
-                        currentTrackPlaying = currentTrackPlaying,
-                        updateIsLoved = viewModel::updateIsLoved,
-                        sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
-                        changeSelectList = viewModel::changeSelectList,
-                        onSearchTextChange = viewModel::onSearchTextChange,
-                        onActiveChange = viewModel::onActiveChange,
-                        loadTracksToDatabase = viewModel::loadTracksToDatabase,
-                        deleteTracksFromDatabase = viewModel::deleteTracksFromDatabase,
-                        sortType = viewModel.sortType,
-                        onEvent = viewModel::onEvent,
-                        isExpanded = viewModel.isExpanded,
-                        selectListTracks = viewModel::selectListTracks,
-                        saveSortOption = viewModel::saveSortOption,
-                        sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
-                    ) { tracks }
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        UpperBlock()
+                        UserActionBar(
+                            currentUri = currentTrackPlayingURI,
+                            exoPlayer = viewModel.exoPlayer,
+                            searchText = viewModel.searchText,
+                            active = viewModel.active,
+                            currentTrackPlaying = currentTrackPlaying,
+                            updateIsLoved = viewModel::updateIsLoved,
+                            sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
+                            changeSelectList = viewModel::changeSelectList,
+                            onSearchTextChange = viewModel::onSearchTextChange,
+                            onActiveChange = viewModel::onActiveChange,
+                            loadTracksToDatabase = viewModel::loadTracksToDatabase,
+                            deleteTracksFromDatabase = viewModel::deleteTracksFromDatabase,
+                            sortType = viewModel.sortType,
+                            onEvent = viewModel::onEvent,
+                            isExpanded = viewModel.isExpanded,
+                            selectListTracks = viewModel::selectListTracks,
+                            saveSortOption = viewModel::saveSortOption,
+                            sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
+                        ) { tracks }
+                    }
                 }
 
                 if (tracks.isNotEmpty()) {
@@ -419,17 +421,45 @@ fun ListScreen(
                             updateIsLoved = viewModel::updateIsLoved,
                             sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
                             trackINDEX = index,
-                            modifier = Modifier.animateItemPlacement(
-                                animationSpec = tween(
-                                    durationMillis = 300,
-                                    easing = FastOutSlowInEasing
-                                )),
+                            modifier = Modifier,
                             sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
                         )
                     }
                 }
             }
         )
+
+        val itemSize = 70.dp
+        val density = LocalDensity.current
+        val itemSizePx = with(density) { itemSize.toPx() }
+        val itemsScrollCount = tracks.size
+
+
+        AnimatedVisibility(
+            visible = showButton,
+            enter = slideInHorizontally(initialOffsetX = { 82 }) + fadeIn(
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = FastOutSlowInEasing
+                )
+            ),
+            exit = slideOutHorizontally(targetOffsetX = { 82 }) + fadeOut(
+                animationSpec = tween(
+                    durationMillis = 300
+                )
+            ),
+        ) {
+
+            ScrollToTopButton {
+                coroutineScope.launch {
+                    listState.animateScrollBy(
+                        value = -1 * itemSizePx * itemsScrollCount,
+                        animationSpec = tween(durationMillis = 4000)
+                    )
+                }
+            }
+        }
+
 
         BottomPlayer(
             currentTrackPlaying = viewModel.currentTrackPlaying,
@@ -451,39 +481,6 @@ fun ListScreen(
             changeSelectList = viewModel::changeSelectList,
             sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
         )
-
-
-        val itemSize = 70.dp
-        val density = LocalDensity.current
-        val itemSizePx = with(density) { itemSize.toPx() }
-        val itemsScrollCount = tracks.size
-
-        val isTrackScreenExpanded by viewModel.isExpanded.collectAsStateWithLifecycle()
-
-        AnimatedVisibility(
-            visible = showButton && !isTrackScreenExpanded,
-            enter = slideInHorizontally(initialOffsetX = { 82 }) + fadeIn(
-                animationSpec = tween(
-                    durationMillis = 250,
-                    easing = FastOutSlowInEasing
-                )
-            ),
-            exit = slideOutHorizontally(targetOffsetX = { 82 }) + fadeOut(
-                animationSpec = tween(
-                    durationMillis = if (isTrackScreenExpanded) 60 else 300
-                )
-            ),
-        ) {
-
-            ScrollToTopButton {
-                coroutineScope.launch {
-                    listState.animateScrollBy(
-                        value = -1 * itemSizePx * itemsScrollCount,
-                        animationSpec = tween(durationMillis = 4000)
-                    )
-                }
-            }
-        }
     }
 }
 

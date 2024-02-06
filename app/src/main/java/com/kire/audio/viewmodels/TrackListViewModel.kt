@@ -66,8 +66,8 @@ class TrackListViewModel(
         get() = _sortType.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val _tracks = _sortType
-        .flatMapLatest {sortType ->
+    private var _tracks = _sortType
+        .flatMapLatest { sortType ->
             when(sortType) {
                 SortType.DATA_ASC_ORDER -> trackRepository.getTracksOrderedByDateAddedASC()
                 SortType.DATA_DESC_ORDER -> trackRepository.getTracksOrderedByDateAddedDESC()
@@ -80,7 +80,6 @@ class TrackListViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
 
     fun onEvent(event: SortOptionEvent) {
         when(event){
@@ -103,7 +102,6 @@ class TrackListViewModel(
             ListSelector.MAIN_LIST -> _tracks
             ListSelector.SEARCH_LIST -> _searchResult
             ListSelector.FAVOURITE_LIST -> _favouriteTracks
-            else -> TODO()
         }
 
 

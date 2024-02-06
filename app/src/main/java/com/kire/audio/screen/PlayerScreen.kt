@@ -1,8 +1,12 @@
 package com.kire.audio.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.net.Uri
-import android.util.Log
+import android.os.Environment
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -13,6 +17,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,11 +27,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -34,8 +39,10 @@ import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
@@ -46,6 +53,9 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.PhotoLibrary
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.RepeatOn
 import androidx.compose.material.icons.rounded.RepeatOne
@@ -82,6 +92,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -90,9 +101,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.media3.exoplayer.ExoPlayer
@@ -100,11 +114,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.kire.audio.BuildConfig
 import com.kire.audio.functional.ListSelector
 
 import com.kire.audio.R
 import com.kire.audio.functional.bounceClick
 import com.kire.audio.functional.convertLongToTime
+import com.kire.audio.functional.createImageFile
 import com.kire.audio.functional.getContext
 
 import com.kire.audio.mediaHandling.SkipTrackAction
@@ -116,7 +132,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
+import java.io.File
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.Objects
 
 import java.util.concurrent.TimeUnit
 
@@ -223,7 +244,7 @@ fun Background(
             colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply{
                 if (context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
                     setToScale(0.35f,0.35f,0.35f,1f)
-                else setToScale(0.6f,0.6f,0.6f,1f)
+                else setToScale(0.7f,0.7f,0.7f,1f)
             }),
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,10 +321,14 @@ fun Header(
 fun GridElement(
     text: String,
     switcher: Boolean,
+    isFirst:Boolean,
     isEnabled: Boolean = false,
     isEditable: Boolean = false,
-    updateText: ((String) -> Unit)? = null
+    isImageURI: Boolean = false,
+    updateText: ((String) -> Unit)? = null,
+    changeOpenDialog: ((Boolean) -> Unit)? = null
 ){
+
     var newText by rememberSaveable { mutableStateOf(text) }
 
     if (switcher)
@@ -313,6 +338,8 @@ fun GridElement(
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.SansSerif,
+            modifier = Modifier
+                .padding(top = if (isFirst) 18.dp else 0.dp)
         )
     else
         BasicTextField(
@@ -321,15 +348,23 @@ fun GridElement(
                     Color.Transparent,
                     MaterialTheme.shapes.small,
                 )
-                .fillMaxWidth(0.5f),
+                .fillMaxWidth(0.5f)
+                .padding(top = if (isFirst) 18.dp else 0.dp)
+                .pointerInput(isEnabled && isImageURI) {
+                    detectTapGestures {
+                        if (changeOpenDialog != null) {
+                            changeOpenDialog(true)
+                        }
+                    }
+                },
             value = newText,
             onValueChange = {
                 newText = it.also {
-                    if (updateText != null && !newText.equals(text))
+                    if (updateText != null && newText != text)
                         updateText(it)
                 }
             },
-            enabled = isEnabled && isEditable,
+            enabled = isEnabled && isEditable && !isImageURI,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             textStyle = LocalTextStyle.current.copy(
                 color = MaterialTheme.colorScheme.onTertiary,
@@ -359,6 +394,119 @@ fun GridElement(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DialogGalleryOrPhoto(
+    changeOpenDialog: (Boolean) -> Unit,
+    updateUri: (Uri) -> Unit
+){
+
+    val context = getContext()
+
+    val file = context.createImageFile()
+    val uri = FileProvider.getUriForFile(
+        Objects.requireNonNull(context),
+        BuildConfig.APPLICATION_ID + ".provider", file
+    )
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { newUri ->
+            if (newUri == null) return@rememberLauncherForActivityResult
+
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val imageFileName = "JPEG_$timeStamp.jpg"
+
+            val input = context.contentResolver.openInputStream(newUri) ?: return@rememberLauncherForActivityResult
+            val outputFile = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), imageFileName)
+
+            outputFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+
+            input.close()
+
+            val localUri = FileProvider.getUriForFile(
+                context,
+                "${BuildConfig.APPLICATION_ID}.provider",
+                outputFile
+            )
+
+            updateUri(localUri)
+        }
+    )
+
+    val cameraLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture(),
+            onResult = { isTaken ->
+                if (isTaken)
+                    updateUri(uri)
+            }
+        )
+
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(uri)
+        } else {  }
+    }
+
+    BasicAlertDialog(
+        onDismissRequest = {
+            changeOpenDialog(false)
+        }
+    ) {
+
+        Row(
+            modifier = Modifier
+                .wrapContentSize()
+                .background(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(size = 24.dp)
+                )
+                .padding(
+                    top = 28.dp,
+                    bottom = 28.dp,
+                    start = 32.dp,
+                    end = 32.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+
+            Icon(
+                imageVector = Icons.Rounded.PhotoCamera,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .size(52.dp)
+                    .bounceClick {
+                        val permissionCheckResult =
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                        if (permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
+                            cameraLauncher.launch(uri)
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }
+            )
+            Icon(
+                imageVector = Icons.Rounded.PhotoLibrary,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .size(52.dp)
+                    .bounceClick {
+                        galleryLauncher.launch("image/*")
+                    }
+            )
+        }
+    }
+}
+
 
 private fun LazyGridScope.header(
     content: @Composable LazyGridItemScope.() -> Unit
@@ -375,6 +523,10 @@ fun DialogInfo(
     upsertTrack: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ) {
+
+    var openDialog by remember {
+        mutableStateOf(false)
+    }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -398,6 +550,7 @@ fun DialogInfo(
     var newTitle by rememberSaveable { mutableStateOf(track.title) }
     var newArtist by rememberSaveable { mutableStateOf(track.artist) }
     var newAlbum by rememberSaveable { mutableStateOf(track.album) }
+
 
     BasicAlertDialog(
         onDismissRequest = {
@@ -426,8 +579,7 @@ fun DialogInfo(
             header {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                        .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -456,9 +608,18 @@ fun DialogInfo(
                                 .size(18.dp)
                                 .bounceClick {
                                     isEnabled = !isEnabled.also {
-                                        if (!track.title.equals(newTitle) || !track.artist.equals(newArtist) || !track.album.equals(newAlbum))
+                                        if (
+                                            !track.title.equals(newTitle) ||
+                                            !track.artist.equals(newArtist) ||
+                                            !track.album.equals(newAlbum)
+                                        )
                                             coroutineScope.launch(Dispatchers.Default) {
-                                                upsertTrack(track.copy(title = newTitle, artist = newArtist, album = newAlbum)
+                                                upsertTrack(track
+                                                    .copy(
+                                                        title = newTitle,
+                                                        artist = newArtist,
+                                                        album = newAlbum
+                                                    )
                                                     .also {
                                                         sentInfoToBottomSheetOneParameter(it)
                                                     }
@@ -484,7 +645,8 @@ fun DialogInfo(
                 item {
                     GridElement(
                         text = element.key,
-                        switcher = true
+                        switcher = true,
+                        isFirst = element.key == "Title"
                     )
                 }
                 item {
@@ -492,18 +654,40 @@ fun DialogInfo(
                         text = element.value,
                         switcher = false,
                         isEnabled = isEnabled,
-                        isEditable = element.key in arrayOf("Title", "Artist", "Album"),
+                        isImageURI = element.key == "Image URI",
+                        isEditable = element.key in arrayOf("Title", "Artist", "Album", "Image URI"),
                         updateText = { newText ->
                             when(element.key){
                                 "Title" -> newTitle = newText
                                 "Artist" -> newArtist = newText
                                 "Album" -> newAlbum = newText
                             }
+                        },
+                        isFirst = element.key == "Title",
+                        changeOpenDialog = {isIt ->
+                            openDialog = isIt
                         }
                     )
                 }
             }
         }
+    }
+
+    if (openDialog) {
+        DialogGalleryOrPhoto(
+            changeOpenDialog = {isIt ->
+                openDialog = isIt
+            },
+            updateUri = { imageUri ->
+                coroutineScope.launch(Dispatchers.Default) {
+                    upsertTrack(track.copy(imageUri = imageUri)
+                        .also {
+                            sentInfoToBottomSheetOneParameter(it)
+                        }
+                    )
+                }
+            },
+        )
     }
 }
 
@@ -525,8 +709,8 @@ fun FlipCard(
     cardFace: CardFace,
     onClick: (CardFace) -> Unit,
     modifier: Modifier = Modifier,
-    back: @Composable () -> Unit = {},
     front: @Composable () -> Unit = {},
+    back: @Composable (Modifier) -> Unit = {}
 ) {
 
     val rotation = animateFloatAsState(
@@ -543,27 +727,17 @@ fun FlipCard(
         modifier = modifier
             .graphicsLayer {
                 rotationY = -rotation.value
-                cameraDistance = 12f * density
+                cameraDistance = 14f * density
             },
     ) {
 
-        if (rotation.value <= 90f) {
-            Box(
-                Modifier.fillMaxSize()
-            ) {
+            if (rotation.value <= 90f)
                 front()
-            }
-        } else {
-            Box(
+
+            back(
                 Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        rotationY = 180f
-                    },
-            ) {
-                back()
-            }
-        }
+                    .graphicsLayer { rotationY = 180f }
+                    .alpha(1f))
     }
 }
 
@@ -580,46 +754,60 @@ fun ShowImageAndText(
     sentInfoToBottomSheetOneParameter: (Track) -> Unit
 ){
 
-    val imageUri = track.imageUri
+    val waitingMessage = stringResource(R.string.lyrics_dialog_waiting_message)
+    val unsuccessfulMessage = stringResource(R.string.lyrics_dialog_unsuccessful_message)
 
     val coroutineScope = rememberCoroutineScope()
 
-    val lyrics = rememberSaveable{ mutableStateOf(track.lyrics) }
+    val lyrics = remember { mutableStateOf(track.lyrics) }
 
     var isEnabled by rememberSaveable { mutableStateOf(false) }
 
+    var defaultMessage by remember { mutableStateOf(waitingMessage) }
+
+    fun String.toAllowedForm(): String {
+        val notAllowedCharacters = "[^\\sa-zA-Z0-9_-]".toRegex()
+        val hyphen = "[\\s_]+".toRegex()
+
+        return this.trim().lowercase().replace("&", "and").replace(notAllowedCharacters, "")
+            .replace(hyphen, "-").run {
+                if (this.contains("feat")) this.removeRange(
+                    this.indexOf("feat") - 1,
+                    this.length
+                ) else this
+            }
+    }
+
     val lyricsRequest: () -> Unit = {
+
+        var linkOrData = false
 
         coroutineScope.launch(Dispatchers.IO) {
 
             try {
-
-                val allowedCharacters = "[^\\sa-zA-Z_-]".toRegex()
-                val hyphen = "[\\s_]+".toRegex()
-
                 val title =
-                    track.title.lowercase().replace("&", "and").replace(allowedCharacters, "")
-                        .replace(hyphen, "-").run {
-                            if (this.contains("feat")) this.removeRange(
-                                this.indexOf("feat") - 1,
-                                this.length
-                            ) else this
-                        }
+                    track.title.toAllowedForm()
 
                 val artist =
-                    track.artist.lowercase().replace(allowedCharacters, "").replace(hyphen, "-")
-                        .replaceFirstChar(Char::titlecase).run {
-                            if (this.contains("feat")) this.removeRange(
-                                this.indexOf("feat") - 1,
-                                this.length
-                            ) else this
-                        }
+                    track.artist.toAllowedForm().replaceFirstChar(Char::titlecase)
 
                 val url =
+
                     if (lyrics.value.contains("genius.com"))
-                        lyrics.value.also { Log.d("MINE", it) }
-                    else
+                        lyrics.value
+
+                    else if (lyrics.value.contains("data--")) {
+                        val urlPart = lyrics.value.replace("data--", "").toAllowedForm().replaceFirstChar(Char::titlecase)
+
+                        linkOrData = true
+
+                        ("https://genius.com/$urlPart-lyrics").replace("--+".toRegex(), "-")
+                    }
+                    else {
+                        linkOrData = true
+
                         ("https://genius.com/$artist-$title-lyrics").replace("--+".toRegex(), "-")
+                    }
 
 
                 var doc: org.jsoup.nodes.Document =
@@ -635,19 +823,27 @@ fun ShowImageAndText(
                     text += elements.eq(i).text().replace("$$$", "\n")
 
                 lyrics.value = text
-                Log.d("MINE", text)
 
                 upsertTrack(track.copy(lyrics = lyrics.value))
 
             } catch (e: IOException) {
-
+                if (linkOrData)
+                    lyrics.value = ""
+                defaultMessage = unsuccessfulMessage
             }
         }
     }
 
-    LaunchedEffect(Unit) {
-        lyricsRequest()
+    LaunchedEffect(track.path) {
+        if (track.lyrics.isEmpty()) {
+            defaultMessage = waitingMessage
+            lyrics.value = ""
+            lyricsRequest()
+        }
+        else
+            lyrics.value = track.lyrics
     }
+
 
     Column(
         modifier = Modifier
@@ -673,26 +869,25 @@ fun ShowImageAndText(
                 .wrapContentHeight(),
         ) {
 
-            Crossfade(
-                targetState = imageUri,
-                label = "Track Image in foreground"
-            ) {
+            var cardFace by rememberSaveable {
+                mutableStateOf(CardFace.Front)
+            }
 
-                var cardFace by remember {
-                    mutableStateOf(CardFace.Front)
-                }
-
-                FlipCard(
-                    cardFace = cardFace,
-                    onClick = {
-                        if (!isEnabled)
-                            cardFace = cardFace.next
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f / 1f)
-                        .clip(RoundedCornerShape(25.dp)),
-                    front = {
+            FlipCard(
+                cardFace = cardFace,
+                onClick = {
+                    if (!isEnabled)
+                        cardFace = cardFace.next
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f / 1f)
+                    .clip(RoundedCornerShape(25.dp)),
+                front = {
+                    Crossfade(
+                        targetState = track.imageUri,
+                        label = "Track Image in foreground"
+                    ) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(it)
@@ -708,147 +903,191 @@ fun ShowImageAndText(
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(25.dp))
                         )
-                    },
-                    back = {
-                        LazyColumn(
+                    }
+                },
+                back = { graphicModifier ->
+                    Column(
+                        modifier = graphicModifier
+                            .fillMaxSize()
+                            .background(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(size = 25.dp)
+                            )
+                            .verticalScroll(rememberScrollState())
+                            .padding(
+                                start = 32.dp,
+                                end = 32.dp,
+                            ),
+                        verticalArrangement =  Arrangement.spacedBy(if (!isEnabled && lyrics.value.isEmpty() && defaultMessage.equals(waitingMessage)) 0.dp else 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        Column(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(size = 25.dp)
-                                ),
-                            verticalArrangement = Arrangement.spacedBy(26.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                                .padding(top = 28.dp)
+                                .fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ){
 
-                            item {
-                                Column(
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 28.dp, start = 32.dp, end = 32.dp)
-                                        .height(56.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .size(18.dp)
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ){
-
-                                        Box(
-                                            modifier = Modifier
-                                                .size(18.dp)
-                                        ) {
-                                            if (isEnabled)
-                                                Icon(
-                                                    imageVector = Icons.Rounded.Delete,
-                                                    contentDescription = "",
-                                                    tint = MaterialTheme.colorScheme.secondaryContainer,
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .bounceClick {
-                                                            lyrics.value = ""
-                                                        }
-                                                )
-                                        }
-
-                                        Text(
-                                            text = "Lyrics",
-                                            fontWeight = FontWeight.W700,
-                                            fontSize = 28.sp,
-                                            fontFamily = FontFamily.SansSerif,
-                                            color = MaterialTheme.colorScheme.onPrimary
-                                        )
-
+                                    if (isEnabled)
                                         Icon(
-                                            imageVector = if (!isEnabled) Icons.Rounded.Edit else Icons.Rounded.Save,
+                                            imageVector = Icons.Rounded.Delete,
                                             contentDescription = "",
                                             tint = MaterialTheme.colorScheme.secondaryContainer,
                                             modifier = Modifier
-                                                .size(18.dp)
+                                                .fillMaxSize()
                                                 .bounceClick {
-                                                    isEnabled = !isEnabled.also {
-                                                        if (!lyrics.equals(track.lyrics))
-                                                            if (lyrics.value.contains("genius.com"))
-                                                                lyricsRequest()
-                                                            else {
-                                                                coroutineScope.launch(Dispatchers.Default) {
-                                                                    upsertTrack(track.copy(lyrics = lyrics.value))
-                                                                }
-                                                            }
-                                                    }
+                                                    lyrics.value = ""
+                                                }
+                                        )
+                                    else if (lyrics.value.isEmpty() && defaultMessage.equals(unsuccessfulMessage)){
+                                        Icon(
+                                            imageVector = Icons.Rounded.Refresh,
+                                            contentDescription = "",
+                                            tint = MaterialTheme.colorScheme.secondaryContainer,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .bounceClick {
+                                                    defaultMessage = waitingMessage
+                                                    lyricsRequest()
                                                 }
                                         )
                                     }
-
-                                    HorizontalDivider(
-                                        modifier = Modifier
-                                            .fillMaxWidth(0.25f)
-                                            .clip(
-                                                RoundedCornerShape(28.dp)
-                                            ),
-                                        thickness = 4.dp,
-                                        color = MaterialTheme.colorScheme.onTertiary
-                                    )
                                 }
-                            }
 
-                            item {
-                                Box(
+                                Text(
+                                    text = stringResource(R.string.lyrics_dialog_header),
+                                    fontWeight = FontWeight.W700,
+                                    fontSize = 28.sp,
+                                    fontFamily = FontFamily.SansSerif,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+
+                                Icon(
+                                    imageVector = if (!isEnabled) Icons.Rounded.Edit else Icons.Rounded.Save,
+                                    contentDescription = "",
+                                    tint = MaterialTheme.colorScheme.secondaryContainer,
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(start = 32.dp, end = 32.dp, bottom = 28.dp),
-                                    contentAlignment = Alignment.Center
-                                ){
-                                    BasicTextField(
-                                        modifier = Modifier
-                                            .background(
-                                                Color.Transparent,
-                                                MaterialTheme.shapes.small,
-                                            )
-                                            .fillMaxWidth(),
-                                        value = lyrics.value,
-                                        onValueChange = {
-                                            lyrics.value = it
-                                        },
-                                        enabled = isEnabled,
-                                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                        textStyle = LocalTextStyle.current.copy(
-                                            color = MaterialTheme.colorScheme.onTertiary,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.W600,
-                                        ),
-                                        decorationBox = { innerTextField ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth(),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Box(Modifier.weight(1f)) {
-                                                    innerTextField()
-                                                }
+                                        .size(18.dp)
+                                        .bounceClick {
+                                            isEnabled = !isEnabled.also {
+                                                if (!lyrics.equals(track.lyrics))
+                                                    if (lyrics.value.contains("genius.com") || lyrics.value.contains(
+                                                            "data--"
+                                                        )
+                                                    )
+                                                        lyricsRequest()
+                                                    else
+                                                        coroutineScope.launch(Dispatchers.Default) {
+                                                            upsertTrack(track.copy(lyrics = lyrics.value))
+                                                        }
+                                                else if (!isEnabled && lyrics.value.isEmpty())
+                                                    lyricsRequest()
                                             }
                                         }
-                                    )
-                                }
+                                )
                             }
-                        }
-                    },
-                )
-            }
 
-            TextBlock(
-                track = track,
-                skipTrack = skipTrack,
-                selectList = selectList,
-                selectListTracks = selectListTracks,
-                updateIsLoved = updateIsLoved,
-                sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
+                            HorizontalDivider(
+                                modifier = Modifier
+                                    .fillMaxWidth(0.25f)
+                                    .clip(
+                                        RoundedCornerShape(28.dp)
+                                    ),
+                                thickness = 4.dp,
+                                color = MaterialTheme.colorScheme.onTertiary
+                            )
+                        }
+
+                        if (isEnabled || lyrics.value.isNotEmpty())
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = 8.dp, bottom = 28.dp),
+                                contentAlignment = Alignment.Center
+                            ){
+                                BasicTextField(
+                                    modifier = Modifier
+                                        .background(
+                                            Color.Transparent,
+                                            MaterialTheme.shapes.small,
+                                        )
+                                        .fillMaxWidth(),
+                                    value = lyrics.value,
+                                    onValueChange = {
+                                        lyrics.value = it
+                                    },
+                                    enabled = isEnabled,
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    textStyle = LocalTextStyle.current.copy(
+                                        color = MaterialTheme.colorScheme.onTertiary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.W600,
+                                    ),
+                                    decorationBox = { innerTextField ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(Modifier.weight(1f)) {
+                                                innerTextField()
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                            else
+                                Box(
+                                    modifier =
+                                        if (defaultMessage.equals(waitingMessage))
+                                            Modifier
+                                                .fillMaxSize()
+                                                .weight(1f, fill = false)
+                                                .padding(bottom = 28.dp)
+                                        else Modifier
+                                            .wrapContentHeight()
+                                            .padding(bottom = 28.dp),
+                                    contentAlignment = Alignment.Center
+                                ){
+
+                                    if (!isEnabled && lyrics.value.isEmpty()){
+                                        Text(
+                                            text = defaultMessage,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = 20.sp,
+                                            fontFamily = FontFamily.SansSerif,
+                                            fontWeight = FontWeight.W600,
+                                            textAlign = if (defaultMessage.equals(waitingMessage)) TextAlign.Center else TextAlign.Start,
+                                        )
+                                    }
+                                }
+                    }
+                },
             )
         }
+
+        TextBlock(
+            track = track,
+            skipTrack = skipTrack,
+            selectList = selectList,
+            selectListTracks = selectListTracks,
+            updateIsLoved = updateIsLoved,
+            sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
+        )
     }
+
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -1191,6 +1430,7 @@ fun DialogFavourite(
                     shape = RoundedCornerShape(size = 24.dp)
                 ),
             contentPadding = PaddingValues(
+                top = 28.dp,
                 start = 32.dp,
                 end = 32.dp,
                 bottom = 28.dp
@@ -1203,8 +1443,7 @@ fun DialogFavourite(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 28.dp, start = 32.dp, end = 32.dp)
-                        .height(56.dp),
+                        .padding(bottom = 18.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

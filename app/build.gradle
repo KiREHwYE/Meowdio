@@ -35,9 +35,9 @@ android {
 
     buildTypes {
         debug {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    getDefaultProguardFile("proguard-android.txt"),
                     "proguard-rules.pro"
             )
             versionNameSuffix = "-debug"
@@ -119,10 +119,8 @@ dependencies {
 
     implementation "io.coil-kt:coil-compose:2.4.0"
 
-    def room_version = "2.5.0-beta01"
-
     implementation "androidx.room:room-runtime:2.6.1"
-    ksp "androidx.room:room-compiler:$room_version"
+    ksp "androidx.room:room-compiler:2.5.0-beta01"
     implementation "androidx.room:room-ktx:2.6.1"
     implementation "androidx.room:room-paging:2.6.1"
 
