@@ -138,7 +138,7 @@ fun Item(
     exoPlayer: ExoPlayer,
     selectList: ListSelector,
     currentUri: String,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     updateIsLoved: (Track) -> Unit,
     trackINDEX: Int,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
@@ -151,113 +151,99 @@ fun Item(
     modifier: Modifier
 ){
 
-    val title by remember { mutableStateOf(track.title) }
-    val artist by remember { mutableStateOf(track.artist) }
-    val uri by remember { mutableStateOf(track.path) }
-    val imageUri by remember { mutableStateOf(track.imageUri) }
+    var _track by remember {
+        mutableStateOf(track)
+    }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .bounceClick {
-                sentInfoToBottomSheet(
-                    track,
-                    selectList,
-                    trackINDEX,
-                    uri
-                )
+    val currentTrackPlaying by currentTrackPlaying.collectAsStateWithLifecycle().also {
+        it.value?.let {
+            if (it.id == _track.id)
+                _track = it
+        }
+    }
 
-                exoPlayer.apply {
 
-                    val isPlaying = TrackListViewModel.reason.value
+    _track.apply {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .bounceClick {
+                    sentInfoToBottomSheet(
+                        _track,
+                        selectList,
+                        trackINDEX,
+                        path
+                    )
 
-                    if (isPlaying && currentUri == uri) {
-                        pause()
-                        TrackListViewModel.reason.value = false
-                    } else if (!isPlaying && currentUri == uri) {
-                        prepare()
-                        play()
-                    } else if (!isPlaying) {
+                    exoPlayer.apply {
 
-                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                        val isPlaying = TrackListViewModel.reason.value
 
-                        setMediaItem(newMediaItem)
-                        prepare()
-                        play()
-                    } else {
-                        pause()
+                        if (isPlaying && currentUri == path) {
+                            pause()
+                            TrackListViewModel.reason.value = false
+                        } else if (!isPlaying && currentUri == path) {
+                            prepare()
+                            play()
+                        } else if (!isPlaying) {
 
-                        val newMediaItem = MediaItem.fromUri(Uri.parse(uri))
+                            val newMediaItem = MediaItem.fromUri(Uri.parse(path))
 
-                        setMediaItem(newMediaItem)
-                        prepare()
-                        play()
+                            setMediaItem(newMediaItem)
+                            prepare()
+                            play()
+                        } else {
+                            pause()
+
+                            val newMediaItem = MediaItem.fromUri(Uri.parse(path))
+
+                            setMediaItem(newMediaItem)
+                            prepare()
+                            play()
+                        }
                     }
                 }
-            }
-    ) {
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if(selectList != ListSelector.FAVOURITE_LIST) Arrangement.Start else Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
         ) {
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
-            ){
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imageUri)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .allowHardware(true)
-                        .diskCacheKey(imageUri.toString())
-                        .memoryCacheKey(imageUri.toString())
-                        .build(),
-                    placeholder = painterResource(R.drawable.ic_launcher_foreground),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = "Track Image",
-                    modifier = Modifier
-                        .height(imageSize)
-                        .width(imageSize)
-                        .clip(RoundedCornerShape(12.dp))
-                )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = if(selectList != ListSelector.FAVOURITE_LIST) Arrangement.Start else Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
 
-                Text(
-                    buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                color = if (selectList == ListSelector.SEARCH_LIST) Color.Black else MaterialTheme.colorScheme.onPrimary,
-                                fontSize = textTitleSize,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        ) {
-                            append(
-                                with(title) {
-                                    if (selectList == ListSelector.SEARCH_LIST)
-                                        if (length > 11) take(11) + "..." else this
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUri)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .allowHardware(true)
+                            .diskCacheKey(imageUri.toString())
+                            .memoryCacheKey(imageUri.toString())
+                            .build(),
+                        placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                        contentScale = ContentScale.Crop,
+                        contentDescription = "Track Image",
+                        modifier = Modifier
+                            .height(imageSize)
+                            .width(imageSize)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
 
-                                    else if (selectList == ListSelector.FAVOURITE_LIST)
-                                        if (length > 13) take(13) + "..." else this
-
-                                    else {
-                                        if (length > 23) take(23) + "..." else this
-                                    }
-                                }
-                            )
-                        }
-                        withStyle(
-                            style = SpanStyle(
-                                color = MaterialTheme.colorScheme.onSecondary,
-                                fontSize = textArtistSize,
-                                fontWeight = FontWeight.W300,
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        ) {
-                            append("\n" +
-                                    with(artist) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(
+                                    color = if (selectList == ListSelector.SEARCH_LIST) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = textTitleSize,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.SansSerif
+                                )
+                            ) {
+                                append(
+                                    with(title) {
                                         if (selectList == ListSelector.SEARCH_LIST)
                                             if (length > 11) take(11) + "..." else this
 
@@ -268,34 +254,57 @@ fun Item(
                                             if (length > 23) take(23) + "..." else this
                                         }
                                     }
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .padding(start = startPadding)
-                )
-            }
+                                )
+                            }
+                            withStyle(
+                                style = SpanStyle(
+                                    color = MaterialTheme.colorScheme.onSecondary,
+                                    fontSize = textArtistSize,
+                                    fontWeight = FontWeight.W300,
+                                    fontFamily = FontFamily.SansSerif
+                                )
+                            ) {
+                                append("\n" +
+                                        with(artist) {
+                                            if (selectList == ListSelector.SEARCH_LIST)
+                                                if (length > 11) take(11) + "..." else this
 
-            if (selectList == ListSelector.FAVOURITE_LIST) {
-                Icon(
-                    Icons.Rounded.Favorite,
-                    contentDescription = "Favourite",
-                    tint = Color.Red,
-                    modifier = Modifier
-                        .size(heartIconSize)
-                        .bounceClick {
-                            updateIsLoved(
-                                track
-                                    .copy(isFavourite = !track.isFavourite)
-                                    .also { track ->
-                                        currentTrackPlaying?.let {
-                                            if (it.title == title && it.artist == artist && it.path == uri)
-                                                sentInfoToBottomSheetOneParameter(track)
+                                            else if (selectList == ListSelector.FAVOURITE_LIST)
+                                                if (length > 13) take(13) + "..." else this
+
+                                            else {
+                                                if (length > 23) take(23) + "..." else this
+                                            }
                                         }
-                                    }
-                            )
-                        }
-                )
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .padding(start = startPadding)
+                    )
+                }
+
+                if (selectList == ListSelector.FAVOURITE_LIST) {
+                    Icon(
+                        Icons.Rounded.Favorite,
+                        contentDescription = "Favourite",
+                        tint = Color.Red,
+                        modifier = Modifier
+                            .size(heartIconSize)
+                            .bounceClick {
+                                updateIsLoved(
+                                    _track
+                                        .copy(isFavourite = !_track.isFavourite)
+                                        .also { thisTrack ->
+                                            currentTrackPlaying?.let {
+                                                if (it.title == title && it.artist == artist && it.path == path)
+                                                    sentInfoToBottomSheetOneParameter(thisTrack)
+                                            }
+                                        }
+                                )
+                            }
+                    )
+                }
             }
         }
     }
@@ -337,8 +346,10 @@ fun ListScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val currentTrackPlaying by viewModel.currentTrackPlaying.collectAsStateWithLifecycle()
-    val tracks by viewModel.selectListTracks(listSelect = ListSelector.MAIN_LIST).collectAsStateWithLifecycle()
+
     val trackINDEX by viewModel.bottomSheetTrackINDEX.collectAsStateWithLifecycle()
+
+    val tracks by viewModel.selectListTracks(listSelect = ListSelector.MAIN_LIST).collectAsStateWithLifecycle()
 
     val currentTrackPlayingURI by viewModel.currentTrackPlayingURI.collectAsStateWithLifecycle()
 
@@ -365,8 +376,6 @@ fun ListScreen(
             loadTracksToDatabase = viewModel::loadTracksToDatabase
         )
 
-
-
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -386,7 +395,7 @@ fun ListScreen(
                             exoPlayer = viewModel.exoPlayer,
                             searchText = viewModel.searchText,
                             active = viewModel.active,
-                            currentTrackPlaying = currentTrackPlaying,
+                            currentTrackPlaying = viewModel.currentTrackPlaying,
                             updateIsLoved = viewModel::updateIsLoved,
                             sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
                             changeSelectList = viewModel::changeSelectList,
@@ -404,27 +413,25 @@ fun ListScreen(
                     }
                 }
 
-                if (tracks.isNotEmpty()) {
-
-                    itemsIndexed(
-                        tracks,
-                        key = { _, track ->
-                            track.id
-                        }
-                    ) { index, track ->
-                        Item(
-                            track = track,
-                            currentUri = currentTrackPlayingURI,
-                            exoPlayer = viewModel.exoPlayer,
-                            selectList = ListSelector.MAIN_LIST,
-                            currentTrackPlaying = currentTrackPlaying,
-                            updateIsLoved = viewModel::updateIsLoved,
-                            sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
-                            trackINDEX = index,
-                            modifier = Modifier,
-                            sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
-                        )
+                itemsIndexed(
+                    tracks,
+                    key = { _, track ->
+                        track.id
                     }
+                ) { index, track ->
+
+                    Item(
+                        track = track,
+                        currentUri = currentTrackPlayingURI,
+                        exoPlayer = viewModel.exoPlayer,
+                        selectList = ListSelector.MAIN_LIST,
+                        currentTrackPlaying = viewModel.currentTrackPlaying,
+                        updateIsLoved = viewModel::updateIsLoved,
+                        sentInfoToBottomSheetOneParameter = viewModel::sentInfoToBottomSheet,
+                        trackINDEX = index,
+                        modifier = Modifier,
+                        sentInfoToBottomSheet = viewModel::sentInfoToBottomSheet
+                    )
                 }
             }
         )
@@ -462,7 +469,7 @@ fun ListScreen(
 
 
         BottomPlayer(
-            currentTrackPlaying = viewModel.currentTrackPlaying,
+            _currentTrackPlaying = viewModel.currentTrackPlaying,
             upsertTrack = viewModel::upsertTrack,
             trackINDEX = trackINDEX,
             selectList = viewModel.selectList,
@@ -547,7 +554,7 @@ fun UserActionBar(
     currentUri: String,
     exoPlayer: ExoPlayer,
     searchText: StateFlow<String>,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     active: StateFlow<Boolean>,
@@ -808,7 +815,7 @@ fun DropdownMenuItemTrailingIcon(
 fun SearchBar(
     currentUri: String,
     searchText: StateFlow<String>,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     active: StateFlow<Boolean>,
@@ -965,7 +972,7 @@ fun Updater(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BottomPlayer(
-    currentTrackPlaying: StateFlow<Track?>,
+    _currentTrackPlaying: StateFlow<Track?>,
     upsertTrack: (Track) -> Unit,
     selectList: StateFlow<ListSelector>,
     trackINDEX: Int,
@@ -986,7 +993,7 @@ fun BottomPlayer(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    val track by currentTrackPlaying.collectAsStateWithLifecycle()
+    val track by _currentTrackPlaying.collectAsStateWithLifecycle()
 
     val selectList by selectList.collectAsStateWithLifecycle()
     var currentTrackList = selectListTracks(selectList).collectAsStateWithLifecycle().value
@@ -997,7 +1004,6 @@ fun BottomPlayer(
     }
 
     val isPlaying by TrackListViewModel.reason.collectAsStateWithLifecycle()
-    val currentTrackPlaying by currentTrackPlaying.collectAsStateWithLifecycle()
 
     val isShown by isShown.collectAsStateWithLifecycle()
 
@@ -1320,7 +1326,7 @@ fun BottomPlayer(
                     saveRepeatMode = saveRepeatMode,
                     repeatMode = repeatMode,
                     changeRepeatMode = changeRepeatMode,
-                    currentTrackPlaying = currentTrackPlaying,
+                    currentTrackPlaying = _currentTrackPlaying,
                     updateIsLoved = updateIsLoved,
                     selectListTracks = selectListTracks,
                     currentTrackPlayingURI = currentTrackPlayingURI,

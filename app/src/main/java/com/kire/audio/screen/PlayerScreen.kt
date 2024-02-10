@@ -155,7 +155,7 @@ fun Screen(
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     selectList: ListSelector,
     updateIsLoved: (Track) -> Unit,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     currentTrackPlayingURI: String,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     play: () -> Unit,
@@ -350,11 +350,10 @@ fun GridElement(
                 )
                 .fillMaxWidth(0.5f)
                 .padding(top = if (isFirst) 18.dp else 0.dp)
-                .pointerInput(isEnabled && isImageURI) {
+                .pointerInput(isEnabled && isEditable && isImageURI) {
                     detectTapGestures {
-                        if (changeOpenDialog != null) {
+                        if (isEnabled && isEditable && isImageURI && changeOpenDialog != null)
                             changeOpenDialog(true)
-                        }
                     }
                 },
             value = newText,
@@ -654,7 +653,7 @@ fun DialogInfo(
                         text = element.value,
                         switcher = false,
                         isEnabled = isEnabled,
-                        isImageURI = element.key == "Image URI",
+                        isImageURI = element.key.equals("Image URI"),
                         isEditable = element.key in arrayOf("Title", "Artist", "Album", "Image URI"),
                         updateText = { newText ->
                             when(element.key){
@@ -982,16 +981,19 @@ fun ShowImageAndText(
                                         .size(18.dp)
                                         .bounceClick {
                                             isEnabled = !isEnabled.also {
-                                                if (!lyrics.equals(track.lyrics))
+                                                if (!lyrics.equals(track.lyrics)) {
                                                     if (lyrics.value.contains("genius.com") || lyrics.value.contains(
                                                             "data--"
                                                         )
                                                     )
                                                         lyricsRequest()
-                                                    else
+                                                    else if (lyrics.value.isEmpty()) {
+                                                            lyricsRequest()
+                                                    } else
                                                         coroutineScope.launch(Dispatchers.Default) {
                                                             upsertTrack(track.copy(lyrics = lyrics.value))
                                                         }
+                                                }
                                                 else if (!isEnabled && lyrics.value.isEmpty())
                                                     lyricsRequest()
                                             }
@@ -1282,7 +1284,7 @@ fun ControlButtons(
     saveRepeatMode: (Int) -> Unit,
     repeatMode: StateFlow<Int>,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     currentTrackPlayingURI: String,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
@@ -1406,7 +1408,7 @@ fun ControlButtons(
 fun DialogFavourite(
     exoPlayer: ExoPlayer,
     favouriteTracks: StateFlow<List<Track>>,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     updateIsLoved: (Track) -> Unit,
     sentInfoToBottomSheetOneParameter: (Track) -> Unit,
     sentInfoToBottomSheet: (Track, ListSelector, Int, String) -> Unit,
@@ -1502,7 +1504,7 @@ fun DialogFavourite(
 @Composable
 fun FunctionalBlock(
     skipTrack: (SkipTrackAction, Boolean, Boolean)->Unit,
-    currentTrackPlaying: Track?,
+    currentTrackPlaying: StateFlow<Track?>,
     currentTrackPlayingURI: String,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     updateIsLoved: (Track) -> Unit,

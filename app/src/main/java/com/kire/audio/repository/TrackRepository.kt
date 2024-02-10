@@ -37,10 +37,10 @@ class TrackRepository(
 
 
     fun upsertTrack(track: Track) = database.dao.upsertTrack(track)
-    fun getTrack(id: String): Track = database.dao.getTrack(id)
+    private fun getTrack(id: String): Track = database.dao.getTrack(id)
     suspend fun updateIsLoved(track: Track) = database.dao.updateIsLoved(track)
     fun getFavouriteTracks(): Flow<List<Track>> = database.dao.getFavouriteTracks()
-    fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
+    private fun deleteTrack(track: Track) = database.dao.deleteTrack(track)
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedASC()
     fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>> = database.dao.getTracksOrderedByDateAddedDESC()
     fun getTracksOrderedByTitleASC(): Flow<List<Track>> = database.dao.getTracksOrderedByTitleASC()
@@ -83,14 +83,14 @@ class TrackRepository(
 
                 val track = Track(
                     id = idC,
-                    title = when {
-                        titleC == null -> "No title"
+                    title = when (titleC) {
+                        null -> "No title"
                         else -> titleC
                     },
                     album = albumC,
-                    artist = when {
-                        artistC == null -> "Unknown artist"
-                        artistC == "<unknown>" -> "Unknown artist"
+                    artist = when (artistC) {
+                        null -> "Unknown artist"
+                        "<unknown>" -> "Unknown artist"
                         else -> artistC
                     },
                     path = pathC,
