@@ -18,10 +18,10 @@ interface TrackDao {
     @Query("SELECT * FROM track WHERE isFavourite LIKE :value")
     fun getFavouriteTracks(value: Boolean = true): Flow<List<Track>>
 
-    @Query("SELECT * FROM track ORDER BY date_added ASC")
+    @Query("SELECT * FROM track ORDER BY dateAdded ASC")
     fun getTracksOrderedByDateAddedASC(): Flow<List<Track>>
 
-    @Query("SELECT * FROM track ORDER BY date_added DESC")
+    @Query("SELECT * FROM track ORDER BY dateAdded DESC")
     fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>>
 
     @Query("SELECT * FROM track ORDER BY title ASC")

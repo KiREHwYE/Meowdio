@@ -105,8 +105,6 @@ class TrackListViewModel(
         }
 
 
-
-
     /*
      * DataStore funcs
      * */
@@ -137,23 +135,6 @@ class TrackListViewModel(
         }
     }
     fun upsertTrack(track: Track) = trackRepository.upsertTrack(track)
-//        .also {
-//        _tracks = _sortType
-//            .flatMapLatest { sortType ->
-//                when(sortType) {
-//                    SortType.DATA_ASC_ORDER -> trackRepository.getTracksOrderedByDateAddedASC()
-//                    SortType.DATA_DESC_ORDER -> trackRepository.getTracksOrderedByDateAddedDESC()
-//                    SortType.TITLE_ASC_ORDER -> trackRepository.getTracksOrderedByTitleASC()
-//                    SortType.TITLE_DESC_ORDER -> trackRepository.getTracksOrderedByTitleDESC()
-//                    SortType.ARTIST_ASC_ORDER -> trackRepository.getTracksOrderedByArtistASC()
-//                    SortType.ARTIST_DESC_ORDER -> trackRepository.getTracksOrderedByArtistDESC()
-//                    SortType.DURATION_ASC_ORDER -> trackRepository.getTracksOrderedByDurationASC()
-//                    SortType.DURATION_DESC_ORDER -> trackRepository.getTracksOrderedByDurationDESC()
-//                }
-//            }
-//            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), mutableListOf())
-//    }
-
 
 
     /*

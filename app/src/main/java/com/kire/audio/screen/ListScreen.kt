@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -75,6 +76,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -180,15 +182,13 @@ fun Item(
                         val isPlaying = TrackListViewModel.reason.value
 
                         if (isPlaying && currentUri == path) {
-                            pause()
                             TrackListViewModel.reason.value = false
+                            pause()
                         } else if (!isPlaying && currentUri == path) {
                             prepare()
                             play()
                         } else if (!isPlaying) {
-
                             val newMediaItem = MediaItem.fromUri(Uri.parse(path))
-
                             setMediaItem(newMediaItem)
                             prepare()
                             play()
@@ -317,7 +317,7 @@ fun OnScrollListener(
     changeIsShown: (Boolean) -> Unit
 ){
     var previousVisibleItemIndex by rememberSaveable {
-        mutableStateOf(0)
+        mutableIntStateOf(0)
     }
 
     listState.apply {
@@ -1015,17 +1015,17 @@ fun BottomPlayer(
 
     val isExpanded by isExpanded.collectAsStateWithLifecycle()
 
-    var duration: Float by remember { mutableStateOf(0f) }
+    var duration: Float by remember { mutableFloatStateOf(0f) }
 
     track?.let {
         duration = it.duration.toFloat()
     } ?: 0f
 
 
-    var minutesCur by remember { mutableStateOf(TimeUnit.MILLISECONDS.toMinutes(exoPlayer.currentPosition)) }
-    var secondsCur by  remember{ mutableStateOf((TimeUnit.MILLISECONDS.toSeconds(exoPlayer.currentPosition) % 60)) }
-    var minutesAll by remember { mutableStateOf(TimeUnit.MILLISECONDS.toMinutes(exoPlayer.duration)) }
-    var secondsAll by remember{ mutableStateOf((TimeUnit.MILLISECONDS.toSeconds(exoPlayer.duration) % 60)) }
+    var minutesCur by remember { mutableLongStateOf(TimeUnit.MILLISECONDS.toMinutes(exoPlayer.currentPosition)) }
+    var secondsCur by  remember{ mutableLongStateOf((TimeUnit.MILLISECONDS.toSeconds(exoPlayer.currentPosition) % 60)) }
+    var minutesAll by remember { mutableLongStateOf(TimeUnit.MILLISECONDS.toMinutes(exoPlayer.duration)) }
+    var secondsAll by remember{ mutableLongStateOf((TimeUnit.MILLISECONDS.toSeconds(exoPlayer.duration) % 60)) }
 
     Updater(
         exoPlayer = exoPlayer,
@@ -1186,9 +1186,11 @@ fun BottomPlayer(
                                         .memoryCacheKey(it.toString())
                                         .build(),
                                     placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                                    contentScale = ContentScale.Crop,
                                     contentDescription = "Track Image",
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
+                                        .aspectRatio(ratio = 1f)
                                         .fillMaxHeight()
                                 )
 

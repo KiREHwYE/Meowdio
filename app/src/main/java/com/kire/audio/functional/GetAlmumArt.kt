@@ -32,5 +32,5 @@ fun getAlbumart(
         parcelFileDescriptor?.close()
     } catch (exception: Exception) { }
 
-    return if (bitmap == null) Uri.parse("android.resource://com.kire.audio/drawable/cat_audio_icon") else uri
+    return if (bitmap == null) Uri.parse("android.resource://com.kire.audio/drawable/music_icon") else uri
 }

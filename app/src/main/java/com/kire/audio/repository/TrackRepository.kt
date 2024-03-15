@@ -95,10 +95,11 @@ class TrackRepository(
                     },
                     path = pathC,
                     duration = durationC,
-                    album_id = album_idC,
+                    albumId = album_idC,
                     imageUri = imageUriC,
-                    date_added = date_addedC,
-                    isFavourite = false
+                    dateAdded = date_addedC,
+                    isFavourite = false,
+                    defaultImageUri = imageUriC
                 )
 
                 if (File(pathC).exists()) {

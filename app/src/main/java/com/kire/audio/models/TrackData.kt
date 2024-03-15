@@ -12,10 +12,11 @@ data class Track(
     val duration: Long = 0,
     val lyrics: String = "",
     val path: String,
-    val album_id: Long?,
+    val albumId: Long?,
     val imageUri: Uri?,
-    val date_added: String?,
+    val dateAdded: String?,
     val isFavourite: Boolean,
+    val defaultImageUri: Uri?,
     @PrimaryKey
     val id: String
     ) {

@@ -35,12 +35,12 @@ import kotlinx.coroutines.launch
 
 
 @UnstableApi
-class MainActivity() : ComponentActivity() {
+class MainActivity : ComponentActivity() {
 
 
-    lateinit var viewModel: TrackListViewModel
+    private lateinit var viewModel: TrackListViewModel
 
-    val listener = object : Player.Listener {
+    private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(_isPlaying: Boolean) {
             TrackListViewModel.reason.value = _isPlaying
         }
@@ -54,6 +54,7 @@ class MainActivity() : ComponentActivity() {
         val audioPlayer = AudioPlayer(this)
 
         val mediaSession = MediaSessionCompat(this, "PlayerService")
+
         val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession.sessionToken)
 
         val notificationBuilder = NotificationCompat.Builder(this, "Main Channel ID")
@@ -88,7 +89,7 @@ class MainActivity() : ComponentActivity() {
             audioNotification = audioNotification
         )
 
-        viewModel = ViewModelProvider(this, factory).get(TrackListViewModel::class.java)
+        viewModel = ViewModelProvider(this, factory)[TrackListViewModel::class.java]
         viewModel.exoPlayer.addListener(listener)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)

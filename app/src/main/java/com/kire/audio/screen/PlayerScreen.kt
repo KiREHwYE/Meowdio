@@ -49,9 +49,12 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.PhotoLibrary
@@ -216,7 +219,6 @@ fun Screen(
 fun Background(
     imageUri: Uri?
 ){
-
     val context = getContext()
 
     Box(
@@ -397,7 +399,9 @@ fun GridElement(
 @Composable
 fun DialogGalleryOrPhoto(
     changeOpenDialog: (Boolean) -> Unit,
-    updateUri: (Uri) -> Unit
+    updateUri: (Uri) -> Unit,
+    imageUri: Uri?,
+    defaultImageUri: Uri?
 ){
 
     val context = getContext()
@@ -502,6 +506,20 @@ fun DialogGalleryOrPhoto(
                         galleryLauncher.launch("image/*")
                     }
             )
+
+            if (imageUri != defaultImageUri)
+                Icon(
+                    imageVector = Icons.Rounded.Refresh,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .bounceClick {
+                            defaultImageUri?.let {
+                                updateUri(it)
+                            }
+                        }
+                )
         }
     }
 }
@@ -538,8 +556,8 @@ fun DialogInfo(
         stringResource(id = R.string.info_dialog_album) to (track.album ?: "0"),
         stringResource(id = R.string.info_dialog_duration) to "$minutesAll:$secondsAll",
         stringResource(id = R.string.info_dialog_favourite) to if (track.isFavourite) "Yes" else "No",
-        stringResource(id = R.string.info_dialog_date_added) to convertLongToTime(track.date_added?.toLong() ?: 0),
-        stringResource(id = R.string.info_dialog_album_id) to track.album_id.toString(),
+        stringResource(id = R.string.info_dialog_date_added) to convertLongToTime(track.dateAdded?.toLong() ?: 0),
+        stringResource(id = R.string.info_dialog_album_id) to track.albumId.toString(),
         stringResource(id = R.string.info_dialog_image_uri) to track.imageUri.toString(),
         stringResource(id = R.string.info_dialog_path) to track.path
     )
@@ -674,6 +692,8 @@ fun DialogInfo(
 
     if (openDialog) {
         DialogGalleryOrPhoto(
+            imageUri = track.imageUri,
+            defaultImageUri = track.defaultImageUri,
             changeOpenDialog = {isIt ->
                 openDialog = isIt
             },
@@ -703,6 +723,7 @@ enum class CardFace(val angle: Float) {
     abstract val next: CardFace
 }
 
+
 @Composable
 fun FlipCard(
     cardFace: CardFace,
@@ -718,7 +739,7 @@ fun FlipCard(
             durationMillis = 600,
             easing = FastOutSlowInEasing,
         ),
-        label = "Flip"
+        label = "FlipCardRotation"
     )
 
     Card(
@@ -736,10 +757,19 @@ fun FlipCard(
             back(
                 Modifier
                     .graphicsLayer { rotationY = 180f }
-                    .alpha(1f))
+                    .alpha(1f)
+            )
     }
 }
 
+
+private enum class LyricsHandler {
+    OFF,
+    SELECTOR_IS_VISIBLE,
+    BY_LINK,
+    BY_TITLE_AND_ARTIST,
+    EDIT_CURRENT_TEXT
+}
 
 @Composable
 fun ShowImageAndText(
@@ -762,6 +792,8 @@ fun ShowImageAndText(
 
     var isEnabled by rememberSaveable { mutableStateOf(false) }
 
+    var switcher by remember { mutableStateOf(LyricsHandler.OFF) }
+
     var defaultMessage by remember { mutableStateOf(waitingMessage) }
 
     fun String.toAllowedForm(): String {
@@ -777,9 +809,7 @@ fun ShowImageAndText(
             }
     }
 
-    val lyricsRequest: () -> Unit = {
-
-        var linkOrData = false
+    val lyricsRequest: (mode: LyricsHandler) -> Unit = {
 
         coroutineScope.launch(Dispatchers.IO) {
 
@@ -791,23 +821,22 @@ fun ShowImageAndText(
                     track.artist.toAllowedForm().replaceFirstChar(Char::titlecase)
 
                 val url =
+                    when(it) {
+                        LyricsHandler.BY_LINK -> lyrics.value.also {
+                            lyrics.value = ""
+                            defaultMessage = waitingMessage
+                        }
+                        LyricsHandler.BY_TITLE_AND_ARTIST -> {
 
-                    if (lyrics.value.contains("genius.com"))
-                        lyrics.value
-
-                    else if (lyrics.value.contains("data--")) {
-                        val urlPart = lyrics.value.replace("data--", "").toAllowedForm().replaceFirstChar(Char::titlecase)
-
-                        linkOrData = true
-
-                        ("https://genius.com/$urlPart-lyrics").replace("--+".toRegex(), "-")
+                            val urlPart = lyrics.value.toAllowedForm().replaceFirstChar(Char::titlecase)
+                            lyrics.value = ""
+                            defaultMessage = waitingMessage
+                            ("https://genius.com/$urlPart-lyrics").replace("--+".toRegex(), "-")
+                        }
+                        else -> {
+                            ("https://genius.com/$artist-$title-lyrics").replace("--+".toRegex(), "-")
+                        }
                     }
-                    else {
-                        linkOrData = true
-
-                        ("https://genius.com/$artist-$title-lyrics").replace("--+".toRegex(), "-")
-                    }
-
 
                 var doc: org.jsoup.nodes.Document =
                     Jsoup.connect(url).userAgent("Mozilla").get()
@@ -826,10 +855,14 @@ fun ShowImageAndText(
                 upsertTrack(track.copy(lyrics = lyrics.value))
 
             } catch (e: IOException) {
-                if (linkOrData)
+
+                if (it != LyricsHandler.BY_LINK)
                     lyrics.value = ""
+
                 defaultMessage = unsuccessfulMessage
             }
+
+            switcher = LyricsHandler.OFF
         }
     }
 
@@ -837,7 +870,9 @@ fun ShowImageAndText(
         if (track.lyrics.isEmpty()) {
             defaultMessage = waitingMessage
             lyrics.value = ""
-            lyricsRequest()
+            switcher = LyricsHandler.OFF
+
+            lyricsRequest(LyricsHandler.OFF)
         }
         else
             lyrics.value = track.lyrics
@@ -939,7 +974,7 @@ fun ShowImageAndText(
                                     modifier = Modifier
                                         .size(18.dp)
                                 ) {
-                                    if (isEnabled)
+                                    if (isEnabled && switcher == LyricsHandler.EDIT_CURRENT_TEXT)
                                         Icon(
                                             imageVector = Icons.Rounded.Delete,
                                             contentDescription = "",
@@ -959,7 +994,7 @@ fun ShowImageAndText(
                                                 .fillMaxSize()
                                                 .bounceClick {
                                                     defaultMessage = waitingMessage
-                                                    lyricsRequest()
+                                                    lyricsRequest(LyricsHandler.OFF)
                                                 }
                                         )
                                     }
@@ -981,21 +1016,18 @@ fun ShowImageAndText(
                                         .size(18.dp)
                                         .bounceClick {
                                             isEnabled = !isEnabled.also {
-                                                if (!lyrics.equals(track.lyrics)) {
-                                                    if (lyrics.value.contains("genius.com") || lyrics.value.contains(
-                                                            "data--"
-                                                        )
-                                                    )
-                                                        lyricsRequest()
-                                                    else if (lyrics.value.isEmpty()) {
-                                                            lyricsRequest()
-                                                    } else
+                                                if (!lyrics.equals(track.lyrics))
+                                                    if (switcher == LyricsHandler.BY_LINK || switcher == LyricsHandler.BY_TITLE_AND_ARTIST || (lyrics.value.isEmpty() && it))
+                                                        lyricsRequest(switcher)
+                                                    else
                                                         coroutineScope.launch(Dispatchers.Default) {
                                                             upsertTrack(track.copy(lyrics = lyrics.value))
                                                         }
-                                                }
-                                                else if (!isEnabled && lyrics.value.isEmpty())
-                                                    lyricsRequest()
+
+                                                switcher = if (!it)
+                                                    LyricsHandler.SELECTOR_IS_VISIBLE
+                                                else
+                                                    LyricsHandler.OFF
                                             }
                                         }
                                 )
@@ -1012,6 +1044,99 @@ fun ShowImageAndText(
                             )
                         }
 
+                        if (isEnabled && switcher == LyricsHandler.SELECTOR_IS_VISIBLE)
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(20.dp),
+                                horizontalAlignment = Alignment.Start
+                            ){
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .bounceClick {
+                                            switcher = LyricsHandler.BY_LINK
+                                            lyrics.value = ""
+                                        },
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    Icon(
+                                        imageVector = Icons.Rounded.Link,
+                                        contentDescription = "",
+                                        tint = MaterialTheme.colorScheme.secondaryContainer,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                    )
+                                    Text(
+                                        text = "By Genius link",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 16.sp,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontWeight = FontWeight.W300,
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .bounceClick {
+                                            switcher = LyricsHandler.BY_TITLE_AND_ARTIST
+                                            lyrics.value = ""
+                                        },
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    Icon(
+                                        imageVector = Icons.Rounded.Lyrics,
+                                        contentDescription = "",
+                                        tint = MaterialTheme.colorScheme.secondaryContainer,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                    )
+                                    Text(
+                                        text = "By artist name & song title",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 16.sp,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontWeight = FontWeight.W300,
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .bounceClick {
+                                            switcher = LyricsHandler.EDIT_CURRENT_TEXT
+                                        },
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+
+                                    Icon(
+                                        imageVector = Icons.Rounded.EditNote,
+                                        contentDescription = "",
+                                        tint = MaterialTheme.colorScheme.secondaryContainer,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                    )
+                                    Text(
+                                        text = "Edit current text",
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 16.sp,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontWeight = FontWeight.W300,
+                                    )
+                                }
+                            }
+
                         if (isEnabled || lyrics.value.isNotEmpty())
                             Box(
                                 modifier = Modifier
@@ -1026,7 +1151,7 @@ fun ShowImageAndText(
                                             MaterialTheme.shapes.small,
                                         )
                                         .fillMaxWidth(),
-                                    value = lyrics.value,
+                                    value = if (switcher != LyricsHandler.SELECTOR_IS_VISIBLE) lyrics.value else "",
                                     onValueChange = {
                                         lyrics.value = it
                                     },
@@ -1034,7 +1159,7 @@ fun ShowImageAndText(
                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                     textStyle = LocalTextStyle.current.copy(
                                         color = MaterialTheme.colorScheme.onTertiary,
-                                        fontSize = 16.sp,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.W600,
                                     ),
                                     decorationBox = { innerTextField ->
@@ -1044,37 +1169,56 @@ fun ShowImageAndText(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Box(Modifier.weight(1f)) {
+                                                if (switcher != LyricsHandler.SELECTOR_IS_VISIBLE && lyrics.value.isEmpty()) {
+                                                    if (switcher == LyricsHandler.BY_LINK)
+                                                        Text(
+                                                            text = "Link example: https://genius.com/While-she-sleeps-feel-lyrics",
+                                                            color = MaterialTheme.colorScheme.onPrimary,
+                                                            fontSize = 15.sp,
+                                                            fontFamily = FontFamily.SansSerif,
+                                                            fontWeight = FontWeight.W300,
+                                                        )
+                                                    if (switcher == LyricsHandler.BY_TITLE_AND_ARTIST)
+                                                        Text(
+                                                            text = "Artist & title example: while she sleeps feels",
+                                                            color = MaterialTheme.colorScheme.onPrimary,
+                                                            fontSize = 15.sp,
+                                                            fontFamily = FontFamily.SansSerif,
+                                                            fontWeight = FontWeight.W300,
+                                                        )
+                                                }
                                                 innerTextField()
                                             }
                                         }
                                     }
                                 )
                             }
-                            else
-                                Box(
-                                    modifier =
-                                        if (defaultMessage.equals(waitingMessage))
-                                            Modifier
-                                                .fillMaxSize()
-                                                .weight(1f, fill = false)
-                                                .padding(bottom = 28.dp)
-                                        else Modifier
-                                            .wrapContentHeight()
-                                            .padding(bottom = 28.dp),
-                                    contentAlignment = Alignment.Center
-                                ){
 
-                                    if (!isEnabled && lyrics.value.isEmpty()){
-                                        Text(
-                                            text = defaultMessage,
-                                            color = MaterialTheme.colorScheme.onPrimary,
-                                            fontSize = 20.sp,
-                                            fontFamily = FontFamily.SansSerif,
-                                            fontWeight = FontWeight.W600,
-                                            textAlign = if (defaultMessage.equals(waitingMessage)) TextAlign.Center else TextAlign.Start,
-                                        )
-                                    }
+                        else
+                            Box(
+                                modifier =
+                                    if (defaultMessage.equals(waitingMessage))
+                                        Modifier
+                                            .fillMaxSize()
+                                            .weight(1f, fill = false)
+                                            .padding(bottom = 28.dp)
+                                    else Modifier
+                                        .wrapContentHeight()
+                                        .padding(bottom = 28.dp),
+                                contentAlignment = Alignment.Center
+                            ){
+
+                                if (!isEnabled && lyrics.value.isEmpty() && switcher == LyricsHandler.OFF){
+                                    Text(
+                                        text = defaultMessage,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontSize = 20.sp,
+                                        fontFamily = FontFamily.SansSerif,
+                                        fontWeight = FontWeight.W600,
+                                        textAlign = if (defaultMessage.equals(waitingMessage)) TextAlign.Center else TextAlign.Start,
+                                    )
                                 }
+                            }
                     }
                 },
             )
@@ -1089,8 +1233,9 @@ fun ShowImageAndText(
             sentInfoToBottomSheetOneParameter = sentInfoToBottomSheetOneParameter
         )
     }
-
 }
+
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

@@ -3,7 +3,6 @@ package com.kire.audio.functional
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.getValue
@@ -20,7 +19,9 @@ enum class ButtonState { Pressed, Idle }
 fun Modifier.bounceClick(onClick: ()->Unit) = composed {
 
     var buttonState by remember { mutableStateOf(ButtonState.Idle) }
-    val scale by animateFloatAsState(if (buttonState == ButtonState.Pressed) 0.80f else 1f)
+    val scale by animateFloatAsState(
+        targetValue = if (buttonState == ButtonState.Pressed) 0.90f else 1f
+    )
 
     val interactionSource = remember { MutableInteractionSource() }
 
