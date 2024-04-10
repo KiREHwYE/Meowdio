@@ -9,7 +9,7 @@
     <string name="listscreen_search">Поиск</string>
     <string name="info_dialog_header">Инфо</string>
     <string name="info_dialog_title">Название</string>
-    <string name="info_dialog_artist">Исплнитель</string>
+    <string name="info_dialog_artist">Исполнитель</string>
     <string name="info_dialog_album">Альбом</string>
     <string name="info_dialog_duration">Длительность</string>
     <string name="info_dialog_favourite">Любимое</string>
@@ -20,6 +20,9 @@
     <string name="favourite_dialog_header">Любимое</string>
     <string name="lyrics_dialog_header">Текст</string>
     <string name="lyrics_dialog_waiting_message">Ожидание получения\nтекста песни.</string>
+    <string name="notification_channel_name">Main Channel</string>
+    <string name="notification_content_title">Audio Notification</string>
+    <string name="notification_content_text">Nothing\'s playing</string>
     <string name="lyrics_dialog_unsuccessful_message">
         Текст песни не может быть получен.\n\n
 

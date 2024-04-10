@@ -19,6 +19,9 @@
     <string name="favourite_dialog_header">Favourite</string>
     <string name="lyrics_dialog_header">Lyrics</string>
     <string name="lyrics_dialog_waiting_message">Waiting for lyrics\nto be received.</string>
+    <string name="notification_channel_name">Main Channel</string>
+    <string name="notification_content_title">Audio Notification</string>
+    <string name="notification_content_text">Nothing\'s playing</string>
     <string name="lyrics_dialog_unsuccessful_message">
         Song lyrics cannot be retrieved.\n\n
 

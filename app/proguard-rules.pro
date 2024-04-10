@@ -19,3 +19,14 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.kire.audio.** { *; }
+-dontusemixedcaseclassnames
+-verbose
+
+-dontwarn javax.servlet.ServletContainerInitializer
+-dontwarn org.apache.xalan.extensions.bsf.BSFManager
+-dontwarn org.apache.bsf.BSFManager
+-dontwarn org.w3c.dom.DOMImplementationSourceList
+-dontwarn org.xml.sax.driver
+-dontwarn reactor.blockhound.integration.BlockHoundIntegration
