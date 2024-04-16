@@ -4,7 +4,7 @@
     <string name="dropdown_artist">Виконавець</string>
     <string name="dropdown_duration">Тривалість</string>
     <string name="dropdown_title">Назва</string>
-    <string name="listscreen_header">Уся музика</string>
+    <string name="listscreen_header">Аудiо</string>
     <string name="listscreen_search">Пошук</string>
     <string name="info_dialog_header">Властивостi</string>
     <string name="info_dialog_title">Назва</string>
