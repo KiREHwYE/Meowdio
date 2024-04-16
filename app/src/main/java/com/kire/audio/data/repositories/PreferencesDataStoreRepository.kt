@@ -1,8 +1,9 @@
 package com.kire.audio.data.repositories
 
 import com.kire.audio.data.preferencesDataStore.PreferencesDataStore
-import com.kire.audio.mediaHandling.functional.RepeatMode
-import com.kire.audio.ui.functional.events.SortType
+import com.kire.audio.data.repositories.interfaces.IPreferencesDataStoreRepository
+import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.presentation.functional.events.SortType
 import kotlinx.coroutines.flow.Flow
 
 class PreferencesDataStoreRepository(

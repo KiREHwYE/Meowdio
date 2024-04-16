@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Meowdio: Music Player</string>
     <string name="dropdown_date">Дата</string>
     <string name="dropdown_artist">Исполнитель</string>
     <string name="dropdown_duration">Длительность</string>
@@ -20,9 +19,6 @@
     <string name="favourite_dialog_header">Любимое</string>
     <string name="lyrics_dialog_header">Текст</string>
     <string name="lyrics_dialog_waiting_message">Ожидание получения\nтекста песни.</string>
-    <string name="notification_channel_name">Main Channel</string>
-    <string name="notification_content_title">Audio Notification</string>
-    <string name="notification_content_text">Nothing\'s playing</string>
     <string name="lyrics_dialog_unsuccessful_message">
         Текст песни не может быть получен.\n\n
 

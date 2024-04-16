@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Meowdio: Music Player</string>
+    <string name="app_name" translatable="false">Meowdio: Music Player</string>
     <string name="dropdown_date">Date</string>
     <string name="dropdown_artist">Artist</string>
     <string name="dropdown_duration">Duration</string>
@@ -17,11 +17,11 @@
     <string name="info_dialog_image_uri">Image URI</string>
     <string name="info_dialog_path">Path</string>
     <string name="favourite_dialog_header">Favourite</string>
+    <string name="notification_channel_name" translatable="false">Main Channel</string>
+    <string name="notification_content_title" translatable="false">Audio Notification</string>
+    <string name="notification_content_text" translatable="false">Nothing\'s playing</string>
     <string name="lyrics_dialog_header">Lyrics</string>
     <string name="lyrics_dialog_waiting_message">Waiting for lyrics\nto be received.</string>
-    <string name="notification_channel_name">Main Channel</string>
-    <string name="notification_content_title">Audio Notification</string>
-    <string name="notification_content_text">Nothing\'s playing</string>
     <string name="lyrics_dialog_unsuccessful_message">
         Song lyrics cannot be retrieved.\n\n
 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dropdown_date">Дата</string>
+    <string name="dropdown_artist">Виконавець</string>
+    <string name="dropdown_duration">Тривалість</string>
+    <string name="dropdown_title">Назва</string>
+    <string name="listscreen_header">Уся музика</string>
+    <string name="listscreen_search">Пошук</string>
+    <string name="info_dialog_header">Властивостi</string>
+    <string name="info_dialog_title">Назва</string>
+    <string name="info_dialog_artist">Виконавець</string>
+    <string name="info_dialog_album">Альбом</string>
+    <string name="info_dialog_duration">Тривалість</string>
+    <string name="info_dialog_favourite">Обране</string>
+    <string name="info_dialog_date_added">Дата додачі</string>
+    <string name="info_dialog_album_id">ID альбому</string>
+    <string name="info_dialog_image_uri">URI зображення</string>
+    <string name="info_dialog_path">Шлях</string>
+    <string name="favourite_dialog_header">Обране</string>
+    <string name="lyrics_dialog_header">Текст</string>
+    <string name="lyrics_dialog_waiting_message">Чекаємо на отримання\nтексту.</string>
+    <string name="lyrics_dialog_unsuccessful_message">
+        Слова пісні не отримані.\n\n
+
+        1) Перевірте інтернет-з\'єднання.\n\n
+        2) Перевірте, щоби ім\'я виконавця та треку містили тільки латинські символи, цифри та особливі символи .\n\n
+        3) Перевірте, щоби ім\'я виконавця та назва треку не містили помилок.\n\n
+    </string>
+</resources>

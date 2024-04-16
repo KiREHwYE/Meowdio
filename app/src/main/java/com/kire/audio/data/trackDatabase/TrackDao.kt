@@ -1,46 +1,48 @@
 package com.kire.audio.data.trackDatabase
 
 import androidx.room.*
-import com.kire.audio.ui.state_holders.models.Track
+import com.kire.audio.data.models.TrackEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TrackDao {
 
     @Upsert
-    fun upsertTrack(track: Track)
+    fun upsertTrack(track: TrackEntity)
     @Update
-    suspend fun updateIsLoved(track: Track)
-
+    suspend fun updateIsLoved(track: TrackEntity)
     @Delete
-    fun deleteTrack(track: Track)
+    fun deleteTrack(track: TrackEntity)
 
     @Query("SELECT * FROM track WHERE isFavourite LIKE :value")
-    fun getFavouriteTracks(value: Boolean = true): Flow<List<Track>>
+    fun getFavouriteTracks(value: Boolean = true): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY dateAdded ASC")
-    fun getTracksOrderedByDateAddedASC(): Flow<List<Track>>
+    fun getTracksOrderedByDateAddedASC(): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY dateAdded DESC")
-    fun getTracksOrderedByDateAddedDESC(): Flow<List<Track>>
+    fun getTracksOrderedByDateAddedDESC(): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY title ASC")
-    fun getTracksOrderedByTitleASC(): Flow<List<Track>>
+    fun getTracksOrderedByTitleASC(): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY title DESC")
-    fun getTracksOrderedByTitleDESC(): Flow<List<Track>>
+    fun getTracksOrderedByTitleDESC(): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY artist ASC")
-    fun getTracksOrderedByArtistASC(): Flow<List<Track>>
+    fun getTracksOrderedByArtistASC(): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track ORDER BY artist DESC")
-    fun getTracksOrderedByArtistDESC(): Flow<List<Track>>
+    fun getTracksOrderedByArtistDESC(): Flow<List<TrackEntity>>
     @Query("SELECT * FROM track ORDER BY duration ASC")
-    fun getTracksOrderedByDurationASC(): Flow<List<Track>>
+    fun getTracksOrderedByDurationASC(): Flow<List<TrackEntity>>
     @Query("SELECT * FROM track ORDER BY duration DESC")
-    fun getTracksOrderedByDurationDESC(): Flow<List<Track>>
+    fun getTracksOrderedByDurationDESC(): Flow<List<TrackEntity>>
     @Query("SELECT * FROM track WHERE id = (:id)")
-    fun getTrack(id: String): Track
+    fun getTrack(id: String): TrackEntity
 
-
+//    @Query("SELECT * FROM track")
+//    fun getArtistsWithTracks():
+//            Map<@MapColumn(columnName = "artist") String,
+//                    List<TrackEntity>>
 }

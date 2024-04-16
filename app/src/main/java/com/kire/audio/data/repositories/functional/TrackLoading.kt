@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
-import com.kire.audio.ui.state_holders.models.Track
+import com.kire.audio.data.models.TrackEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,8 +13,8 @@ import java.io.File
 
 class TracksLoading(private val context: Context) {
 
-    private var _tracksFromLocal: MutableStateFlow<Track?> = MutableStateFlow(null)
-    val tracksFromLocal: StateFlow<Track?> = _tracksFromLocal.asStateFlow()
+    private var _tracksFromLocal: MutableStateFlow<TrackEntity?> = MutableStateFlow(null)
+    val tracksFromLocal: StateFlow<TrackEntity?> = _tracksFromLocal.asStateFlow()
 
     @SuppressLint("Range")
     fun getTracksFromLocal() {
@@ -47,7 +47,7 @@ class TracksLoading(private val context: Context) {
 
                 val imageUriC: Uri? = getAlbumart(album_idC, context)
 
-                val track = Track(
+                val track = TrackEntity(
                     id = idC,
                     title = when (titleC) {
                         null -> "No title"
@@ -74,9 +74,5 @@ class TracksLoading(private val context: Context) {
             } while (cursor.moveToNext())
         }
         cursor?.close()
-    }
-
-    operator fun invoke() {
-        getTracksFromLocal()
     }
 }
