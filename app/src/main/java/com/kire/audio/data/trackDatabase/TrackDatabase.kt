@@ -5,8 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.kire.audio.data.models.TrackEntity
-import com.kire.audio.presentation.models.Track
+import com.kire.audio.data.model.TrackEntity
 
 @Database(
     entities = [TrackEntity::class],

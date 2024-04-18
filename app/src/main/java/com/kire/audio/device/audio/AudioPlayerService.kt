@@ -29,8 +29,7 @@ import com.kire.audio.R
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.notification.CustomMediaNotificationProvider
 import com.kire.audio.device.notification.NotificationPlayerCustomCommandButton
-import com.kire.audio.presentation.activities.MainActivity
-import com.kire.audio.presentation.viewmodels.TrackViewModel
+import com.kire.audio.presentation.activity.MainActivity
 
 class AudioPlayerService: MediaSessionService() {
 

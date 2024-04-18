@@ -53,7 +53,7 @@
         </provider>
 
         <activity
-            android:name=".presentation.activities.MainActivity"
+            android:name=".presentation.activity.MainActivity"
             android:screenOrientation="sensorPortrait"
             android:exported="true"
             android:launchMode="singleTask"

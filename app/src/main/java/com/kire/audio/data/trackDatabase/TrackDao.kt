@@ -1,7 +1,7 @@
 package com.kire.audio.data.trackDatabase
 
 import androidx.room.*
-import com.kire.audio.data.models.TrackEntity
+import com.kire.audio.data.model.TrackEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

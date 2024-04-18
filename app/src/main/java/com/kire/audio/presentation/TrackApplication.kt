@@ -7,7 +7,9 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.util.DebugLogger
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class TrackApplication: Application(), ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader {
