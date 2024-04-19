@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kire.audio.R
+import com.ramcosta.composedestinations.annotation.Destination
 
 
 @Composable
@@ -50,9 +51,25 @@ fun AlbumItem(
     }
 }
 
+@Destination
 @Composable
 fun AlbumScreen(
-    albums: List<String>
+    albums: List<String> = listOf(
+        "Ling Toshite Shigure",
+        "ITZY",
+        "G-IDLE",
+        "BMTH",
+        "SABATON",
+        "AC/DC",
+        "Gazmanov",
+        "Ling Toshite Shigure",
+        "ITZY",
+        "G-IDLE",
+        "BMTH",
+        "SABATON",
+        "AC/DC",
+        "Gazmanov"
+    )
 ){
     Box(
         modifier = Modifier

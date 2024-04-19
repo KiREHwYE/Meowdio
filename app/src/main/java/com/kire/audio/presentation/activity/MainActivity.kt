@@ -13,6 +13,11 @@ import android.view.WindowManager
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,9 +39,19 @@ import com.kire.audio.device.audio.MediaControllerManager
 import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
+import com.kire.audio.device.audio.rememberManagedMediaController
 import com.kire.audio.presentation.screen.ListScreen
+import com.kire.audio.presentation.screen.NavGraphs
+import com.kire.audio.presentation.screen.PlayerScreen
+import com.kire.audio.presentation.screen.destinations.ListScreenDestination
+import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
 import com.kire.audio.presentation.theme.AudioTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
+import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.animations.defaults.NestedNavGraphDefaultAnimations
+import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
+import com.ramcosta.composedestinations.manualcomposablecalls.composable
+import com.ramcosta.composedestinations.rememberNavHostEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 
@@ -62,7 +77,35 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AudioTheme {
-                ListScreen(viewModel)
+
+                val mediaController by rememberManagedMediaController()
+
+                val navHostEngine = rememberNavHostEngine(
+                    navHostContentAlignment = Alignment.TopCenter,
+                    rootDefaultAnimations = RootNavGraphDefaultAnimations.ACCOMPANIST_FADING,
+                    defaultAnimationsForNestedNavGraph = mapOf(
+                        NavGraphs.root to NestedNavGraphDefaultAnimations(
+                            enterTransition = { slideInVertically(initialOffsetY = {1000}, animationSpec = tween(1500)) },
+                            exitTransition = { slideOutVertically(targetOffsetY = {1000}, animationSpec = tween(1500)) }
+                        ),
+                    ))
+
+                DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine) {
+                    composable(ListScreenDestination) {
+                        ListScreen(
+                            viewModel = viewModel,
+                            navigator = destinationsNavigator,
+                            mediaController = mediaController
+                        )
+                    }
+                    composable(PlayerScreenDestination) {
+                        PlayerScreen(
+                            viewModel = viewModel,
+                            navigator = destinationsNavigator,
+                            mediaController = mediaController
+                        )
+                    }
+                }
             }
         }
 
@@ -73,13 +116,13 @@ class MainActivity : ComponentActivity() {
                         viewModel.changeTrackUiState(trackUiState = viewModel.trackUiState.value.copy(isPlaying = it))
                     }
                 }
-                launch {
+                launch(Dispatchers.Main) {
                     MediaCommands.isPreviousTrackRequired.collect {
                         if (it)
                             skipTrack(this@MainActivity, SkipTrackAction.PREVIOUS, viewModel)
                     }
                 }
-                launch {
+                launch(Dispatchers.Main) {
                     MediaCommands.isNextTrackRequired.collect {
                         if (it)
                             skipTrack(this@MainActivity, SkipTrackAction.NEXT, viewModel)
@@ -144,7 +187,6 @@ private fun skipTrack(context: Context, skipTrackAction: SkipTrackAction, viewMo
                 currentTrackPlayingIndex = newINDEX
             )
         )
-
         mediaController.controller.value?.performPlayMedia(selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX])
     }
 

@@ -60,6 +60,8 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -132,6 +134,11 @@ import com.kire.audio.screen.functional.GetPermissions
 import com.kire.audio.screen.functional.ListSelector
 import com.kire.audio.presentation.functional.bounceClick
 import com.kire.audio.presentation.model.SearchUiState
+import com.kire.audio.presentation.screen.destinations.AlbumScreenDestination
+import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Composable
 fun Item(
@@ -320,11 +327,15 @@ fun OnScrollListener(
     }
 }
 
+@RootNavGraph(start = true)
+@Destination
 @Composable
 fun ListScreen(
-    viewModel: TrackViewModel
+    viewModel: TrackViewModel,
+    navigator: DestinationsNavigator,
+    mediaController: MediaController?
 ) {
-    val mediaController by rememberManagedMediaController()
+
 
     var playerState: PlayerState? by remember {
         mutableStateOf(mediaController?.state())
@@ -388,19 +399,31 @@ fun ListScreen(
                         ) {
                             UpperBlock()
                             UserActionBar(
-                                trackUiState = trackUiState,
-                                changeTrackUiState = viewModel::changeTrackUiState,
-                                searchUiState = searchUiState,
-                                changeSearchUiState = viewModel::changeSearchUiState,
-                                mediaController = mediaController!!,
-                                upsertTrack = viewModel::upsertTrack,
+                                tracks = tracks,
                                 loadTracksToDatabase = viewModel::loadTracksToDatabase,
                                 deleteTracksFromDatabase = viewModel::deleteTracksFromDatabase,
-                                sortType = viewModel.sortType,
-                                onEvent = viewModel::onEvent,
-                                selectListTracks = viewModel::selectListOfTracks,
-                                saveSortOption = viewModel::saveSortOption
-                            ) { tracks }
+                                dropDownMenu = {
+                                    DropDownMenu(
+                                        sortType = viewModel.sortType,
+                                        saveSortOption = viewModel::saveSortOption,
+                                        onEvent = viewModel::onEvent,
+                                    )
+                                },
+                                searchBar = {
+                                    SearchBar(
+                                        trackUiState = trackUiState,
+                                        changeTrackUiState = viewModel::changeTrackUiState,
+                                        searchUiState = searchUiState,
+                                        changeSearchUiState = viewModel::changeSearchUiState,
+                                        mediaController = mediaController!!,
+                                        upsertTrack = viewModel::upsertTrack,
+                                        selectListTracks = viewModel::selectListOfTracks
+                                    )
+                                },
+                                navigationBlock = {
+                                    NavigationBlock(navigator)
+                                }
+                            )
                         }
                     }
 
@@ -463,7 +486,8 @@ fun ListScreen(
                 upsertTrack = viewModel::upsertTrack,
                 selectListOfTracks = viewModel::selectListOfTracks,
                 saveRepeatMode = viewModel::saveRepeatMode,
-                mediaController = mediaController!!
+                mediaController = mediaController!!,
+                navigator = navigator
             )
         }
     }
@@ -529,19 +553,12 @@ fun UpperBlock(){
 
 @Composable
 fun UserActionBar(
-    searchUiState: SearchUiState,
-    changeSearchUiState: (SearchUiState) -> Unit,
-    trackUiState: TrackUiState,
-    changeTrackUiState: (TrackUiState) -> Unit,
-    mediaController: MediaController,
-    upsertTrack: suspend (Track) -> Unit,
-    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    tracks: List<Track>,
     loadTracksToDatabase: suspend () -> Unit,
     deleteTracksFromDatabase: suspend (List<Track>) -> Unit,
-    sortType: StateFlow<SortType>,
-    onEvent: (SortOptionEvent) -> Unit,
-    saveSortOption: (SortType) -> Unit,
-    tracks: () -> List<Track>
+    dropDownMenu: @Composable () -> Unit,
+    searchBar: @Composable () -> Unit,
+    navigationBlock: @Composable () -> Unit
 ){
     val coroutineScope = rememberCoroutineScope()
 
@@ -551,7 +568,7 @@ fun UserActionBar(
                 loadTracksToDatabase()
             }
             launch {
-                deleteTracksFromDatabase(tracks())
+                deleteTracksFromDatabase(tracks)
             }
         }
     }
@@ -560,67 +577,112 @@ fun UserActionBar(
         updateTrackDatabase()
     }
 
-    Box(
+    Column(
         modifier = Modifier
-            .padding(bottom = 18.dp)
+            .fillMaxSize()
     ) {
+
         Row(
             modifier = Modifier
+                .padding(bottom = 18.dp)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
-            Row(
+            Box(
                 modifier = Modifier
-                .align(Alignment.Top)
+                    .clip(RoundedCornerShape(24.dp))
+                    .width(120.dp)
+                    .height(56.dp)
+                    .background(color = MaterialTheme.colorScheme.onBackground)
+                    .align(Alignment.Top),
+                contentAlignment = Alignment.Center
+
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .width(120.dp)
-                        .height(56.dp)
-                        .background(color = MaterialTheme.colorScheme.onBackground),
-                    contentAlignment = Alignment.Center
-
+                        .fillMaxWidth(0.65f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    Row(
+
+                    dropDownMenu()
+
+                    Icon(
+                        Icons.Rounded.Refresh,
+                        contentDescription = "Refresh",
                         modifier = Modifier
-                            .fillMaxWidth(0.65f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceAround
-                    ) {
-
-                        DropDownMenu(sortType, saveSortOption, onEvent)
-
-                        Icon(
-                            Icons.Rounded.Refresh,
-                            contentDescription = "Refresh",
-                            modifier = Modifier
-                                .bounceClick {
-                                    updateTrackDatabase()
-                                             },
-                            tint = MaterialTheme.colorScheme.outline
-                        )
-                    }
+                            .bounceClick {
+                                updateTrackDatabase()
+                            },
+                        tint = MaterialTheme.colorScheme.outline
+                    )
                 }
             }
 
-            SearchBar(
-                searchUiState = searchUiState,
-                changeSearchUiState = changeSearchUiState,
-                trackUiState = trackUiState,
-                changeTrackUiState = changeTrackUiState,
-                upsertTrack = upsertTrack,
-                selectListTracks = selectListTracks,
-                mediaController = mediaController,
-            )
+            searchBar()
         }
+
+        navigationBlock()
     }
 }
 
 
+@Composable
+fun NavigationBlock(
+    navigator: DestinationsNavigator
+) {
 
+    Row(
+        modifier = Modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+         Button(
+             onClick = {
+                 /*TODO*/
+             },
+             colors = ButtonDefaults.buttonColors(
+                 containerColor = MaterialTheme.colorScheme.onBackground
+             )
+         ) {
+             Text(
+                 text = "Tracks",
+                 fontFamily = FontFamily.SansSerif,
+                 color = MaterialTheme.colorScheme.onPrimary
+             )
+         }
+        Button(
+            onClick = {
+                navigator.navigate(AlbumScreenDestination())
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onBackground
+            )
+        ) {
+            Text(
+                text = "Albums",
+                fontFamily = FontFamily.SansSerif,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+        Button(
+            onClick = {
+                /*TODO*/
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onBackground
+            )
+        ) {
+            Text(
+                text = "Artists",
+                fontFamily = FontFamily.SansSerif,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
 
 
 @Composable
@@ -682,21 +744,21 @@ fun DropDownMenu(
                 modifier = Modifier.background(MaterialTheme.colorScheme.onBackground)
             ) {
 
-                CustomDropDownMenu(
+                CustomDropDownMenuItem(
                     sortOption = sortOption,
                     sortTypeASC = SortType.DATA_ASC_ORDER,
                     sortTypeDESC = SortType.DATA_DESC_ORDER,
                     text = stringResource(id = R.string.dropdown_date),
                     sortOptionFunc
                 )
-                CustomDropDownMenu(
+                CustomDropDownMenuItem(
                     sortOption = sortOption,
                     sortTypeASC = SortType.TITLE_ASC_ORDER,
                     sortTypeDESC = SortType.TITLE_DESC_ORDER,
                     text = stringResource(id = R.string.dropdown_title),
                     sortOptionFunc
                 )
-                CustomDropDownMenu(
+                CustomDropDownMenuItem(
                     sortOption = sortOption,
                     sortTypeASC = SortType.ARTIST_ASC_ORDER,
                     sortTypeDESC = SortType.ARTIST_DESC_ORDER,
@@ -704,7 +766,7 @@ fun DropDownMenu(
                     sortOptionFunc
                 )
 
-                CustomDropDownMenu(
+                CustomDropDownMenuItem(
                     sortOption = sortOption,
                     sortTypeASC = SortType.DURATION_ASC_ORDER,
                     sortTypeDESC = SortType.DURATION_DESC_ORDER,
@@ -717,7 +779,7 @@ fun DropDownMenu(
 }
 
 @Composable
-fun CustomDropDownMenu(
+fun CustomDropDownMenuItem(
     sortOption: SortType,
     sortTypeASC: SortType,
     sortTypeDESC: SortType,
@@ -925,8 +987,6 @@ fun Updater(
     }
 }
 
-
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BottomPlayer(
@@ -936,6 +996,7 @@ fun BottomPlayer(
     saveRepeatMode: (Int) -> Unit,
     selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     mediaController: MediaController,
+    navigator: DestinationsNavigator
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -1062,7 +1123,8 @@ fun BottomPlayer(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = {
-                            changeTrackUiState(trackUiState.copy(isPlayerScreenExpanded = true))
+//                            changeTrackUiState(trackUiState.copy(isPlayerScreenExpanded = true))
+                            navigator.navigate(PlayerScreenDestination())
                         }
                     )
                 }
@@ -1212,8 +1274,11 @@ fun BottomPlayer(
         }
     }
 
+//        if (trackUiState.isPlayerScreenExpanded)
+//            navigator.navigate(PlayerScreenDestination)
 
-        AnimatedVisibility(
+
+        /*AnimatedVisibility(
             visible = trackUiState.isPlayerScreenExpanded,
             enter = slideInVertically(
                 initialOffsetY = { fullHeight -> fullHeight }, animationSpec = tween(250, easing = FastOutSlowInEasing)
@@ -1247,7 +1312,7 @@ fun BottomPlayer(
                 }
 
 
-                Screen(
+                PlayerScreen(
                     trackUiState = trackUiState,
                     changeTrackUiState = changeTrackUiState,
                     upsertTrack = upsertTrack,
@@ -1272,6 +1337,6 @@ fun BottomPlayer(
                     }
                 )
             }
-        }
+        }*/
     }
 }

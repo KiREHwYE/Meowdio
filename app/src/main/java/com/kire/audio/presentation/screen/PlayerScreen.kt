@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.net.Uri
 
 import android.os.Environment
+import androidx.activity.compose.BackHandler
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -118,6 +120,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.media3.session.MediaController
+import androidx.navigation.NavBackStackEntry
 
 import coil.compose.AsyncImage
 import com.kire.audio.BuildConfig
@@ -128,12 +131,18 @@ import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.functional.RepeatMode
 
 import com.kire.audio.device.audio.functional.SkipTrackAction
+import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.screen.functional.ListSelector
 import com.kire.audio.screen.functional.convertLongToTime
 import com.kire.audio.screen.functional.getContext
 import com.kire.audio.presentation.functional.bounceClick
+import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
+import com.kire.audio.presentation.viewmodel.TrackViewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.spec.DestinationStyle
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -155,31 +164,68 @@ import java.util.concurrent.TimeUnit
 
 import kotlin.time.Duration.Companion.seconds
 
+@Destination
 @Composable
-fun Screen(
-    trackUiState: TrackUiState,
-    changeTrackUiState: (TrackUiState) -> Unit,
-    upsertTrack: suspend (Track) -> Unit,
-    skipTrack: (SkipTrackAction)->Unit,
-    saveRepeatMode: (Int) -> Unit,
-    durationGet: () -> Float,
-    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
-    play: () -> Unit,
-    mediaController: MediaController,
+fun PlayerScreen(
+    viewModel: TrackViewModel,
+    mediaController: MediaController?,
+    navigator: DestinationsNavigator
 ){
+
+    val trackUiState by viewModel.trackUiState.collectAsStateWithLifecycle()
+
+    var duration: Float by remember { mutableFloatStateOf(0f) }
+
+    trackUiState.currentTrackPlaying?.let {
+        duration = it.duration.toFloat()
+    } ?: 0f
+
+
+    val skipTrack: (SkipTrackAction) -> Unit = { skipTrackAction ->
+
+        val currentTrackList = viewModel.selectListOfTracks(trackUiState.currentListSelector).value
+
+        val newINDEX = trackUiState.currentTrackPlayingIndex?.let { index ->
+            skipTrackAction.action(index, currentTrackList.size)
+        } ?: 0
+
+        duration = currentTrackList[newINDEX].duration.toFloat()
+
+        viewModel.changeTrackUiState(
+            trackUiState.copy(
+                currentTrackPlaying = currentTrackList[newINDEX],
+                currentTrackPlayingIndex = newINDEX,
+                currentTrackPlayingURI = currentTrackList[newINDEX].path
+            )
+        )
+
+        mediaController?.apply {
+            if (mediaController.isPlaying)
+                stop()
+
+            performPlayMedia(currentTrackList[newINDEX])
+        }
+    }
+
+
+    BackHandler {
+        navigator.navigateUp()
+        return@BackHandler
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize(),
         contentAlignment = Alignment.Center,
-    ){
+    ) {
 
         Background(imageUri = trackUiState.currentTrackPlaying?.imageUri)
 
-        Column(modifier = Modifier
-            .padding(horizontal = 40.dp)
-            .fillMaxWidth()
-            .fillMaxHeight(0.86f),
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 40.dp)
+                .fillMaxWidth()
+                .fillMaxHeight(0.86f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -187,23 +233,34 @@ fun Screen(
 
             ShowImageAndText(
                 trackUiState = trackUiState,
-                changeTrackUiState = changeTrackUiState,
-                upsertTrack = upsertTrack
+                changeTrackUiState = viewModel::changeTrackUiState,
+                upsertTrack = viewModel::upsertTrack
             )
 
             FunctionalBlock(
                 trackUiState = trackUiState,
-                changeTrackUiState = changeTrackUiState,
-                upsertTrack = upsertTrack,
-                saveRepeatMode = saveRepeatMode,
+                changeTrackUiState = viewModel::changeTrackUiState,
+                upsertTrack = viewModel::upsertTrack,
+                saveRepeatMode = viewModel::saveRepeatMode,
                 skipTrack = skipTrack,
-                mediaController = mediaController,
-                durationGet = durationGet,
-                play = play,
-                selectListTracks = selectListTracks
+                mediaController = mediaController!!,
+                durationGet = { duration },
+                play = {
+                    mediaController.apply {
+                        if (!trackUiState.isPlaying) {
+                            play()
+                            viewModel.changeTrackUiState(trackUiState.copy(isPlaying = true))
+                        } else {
+                            pause()
+                            viewModel.changeTrackUiState(trackUiState.copy(isPlaying = false))
+                        }
+                    }
+                },
+                selectListTracks = viewModel::selectListOfTracks
             )
         }
     }
+
 }
 
 
@@ -628,7 +685,11 @@ fun DialogInfo(
                                                             album = newAlbum ?: "Null"
                                                         )
                                                         .also {
-                                                            changeTrackUiState(trackUiState.copy(currentTrackPlaying = it))
+                                                            changeTrackUiState(
+                                                                trackUiState.copy(
+                                                                    currentTrackPlaying = it
+                                                                )
+                                                            )
                                                         }
                                                     )
                                                 }
@@ -1012,7 +1073,12 @@ fun ShowImageAndText(
                                                     else
                                                         coroutineScope.launch(Dispatchers.Default) {
                                                             trackUiState.currentTrackPlaying?.let { track ->
-                                                                upsertTrack(track.copy(lyrics = lyrics.value ?: "No lyrics"))
+                                                                upsertTrack(
+                                                                    track.copy(
+                                                                        lyrics = lyrics.value
+                                                                            ?: "No lyrics"
+                                                                    )
+                                                                )
                                                             }
 
                                                         }
@@ -1226,7 +1292,6 @@ fun ShowImageAndText(
 }
 
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TextBlock(
@@ -1295,10 +1360,11 @@ fun TextBlock(
 
                         coroutineScope.launch(Dispatchers.IO) {
                             trackUiState.currentTrackPlaying?.let { track ->
-                                upsertTrack(track.copy(isFavourite = !track.isFavourite)
-                                        .also {
-                                            changeTrackUiState(trackUiState.copy(currentTrackPlaying = it))
-                                        }
+                                upsertTrack(track
+                                    .copy(isFavourite = !track.isFavourite)
+                                    .also {
+                                        changeTrackUiState(trackUiState.copy(currentTrackPlaying = it))
+                                    }
                                 )
                             }
                         }
@@ -1421,11 +1487,11 @@ fun ControlButtons(
                         .copy(
                             trackRepeatMode = RepeatMode
                                 .entries[
-                                    ((trackUiState.trackRepeatMode.ordinal + 1) % 3)
-                                        .also { rep ->
-                                            saveRepeatMode(rep)
-                                        }
-                                ]
+                                ((trackUiState.trackRepeatMode.ordinal + 1) % 3)
+                                    .also { rep ->
+                                        saveRepeatMode(rep)
+                                    }
+                            ]
                         )
                     )
                 }
