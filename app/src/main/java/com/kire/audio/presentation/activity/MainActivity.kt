@@ -66,9 +66,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        lifecycleScope.launch(Dispatchers.Default) {
+        lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
-                launch {
+                launch(Dispatchers.IO) {
                     MediaCommands.isPlayRequired.collect {
                         viewModel.changeTrackUiState(trackUiState = viewModel.trackUiState.value.copy(isPlaying = it))
                     }

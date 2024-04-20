@@ -10,6 +10,5 @@ data class TrackUseCases @Inject constructor(
     override val saveRepeatModeUseCase: SaveRepeatModeUseCase,
     override val readRepeatModeUseCase: ReadRepeatModeUseCase,
     override val upsertTrackUseCase: UpsertTrackUseCase,
-    override val loadTracksToDatabaseUseCase: LoadTracksToDatabaseUseCase,
-    override val deleteNoLongerExistingTracksFromDatabaseUseCase: DeleteNoLongerExistingTracksFromDatabaseUseCase
+    override val updateTrackDataBaseUseCase: UpdateTrackDataBaseUseCase
 ): ITrackUseCases

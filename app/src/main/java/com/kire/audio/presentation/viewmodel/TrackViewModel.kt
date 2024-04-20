@@ -10,7 +10,6 @@ import com.kire.audio.screen.functional.ListSelector
 import com.kire.audio.presentation.functional.events.SortOptionEvent
 import com.kire.audio.presentation.util.SortType
 import com.kire.audio.presentation.mapper.asListOfTrack
-import com.kire.audio.presentation.mapper.asListTrackDomain
 import com.kire.audio.presentation.mapper.asSortType
 import com.kire.audio.presentation.mapper.asSortTypeDomain
 import com.kire.audio.presentation.mapper.asTrackDomain
@@ -109,15 +108,12 @@ class TrackViewModel @Inject constructor(
         viewModelScope.launch(coroutineDispatcher) {
             trackUseCases.upsertTrackUseCase(track.asTrackDomain())
         }
-    suspend fun loadTracksToDatabase() =
+
+    fun updateTrackDataBase() =
         viewModelScope.launch(coroutineDispatcher) {
-            trackUseCases.loadTracksToDatabaseUseCase()
+            trackUseCases.updateTrackDataBaseUseCase(coroutineDispatcher)
         }
 
-    fun deleteTracksFromDatabase(tracks: List<Track>) =
-        viewModelScope.launch(coroutineDispatcher) {
-            trackUseCases.deleteNoLongerExistingTracksFromDatabaseUseCase(tracks.asListTrackDomain())
-        }
 
 
     /*

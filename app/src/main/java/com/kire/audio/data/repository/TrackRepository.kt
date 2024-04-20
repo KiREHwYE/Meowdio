@@ -82,10 +82,13 @@ class TrackRepository @Inject constructor(
         }
     }
 
-    override suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase(tracks: List<TrackDomain>){
-        tracks.forEach { track ->
-            if (!File(track.path).exists())
-                deleteTrack(track.asTrackEntity())
+    override suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase(){
+
+        getTracksOrderedByDateAddedASC().collect { tracks ->
+            tracks.forEach { track ->
+                if (!File(track.path).exists())
+                    deleteTrack(track.asTrackEntity())
+            }
         }
     }
 }

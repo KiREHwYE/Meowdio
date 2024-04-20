@@ -8,6 +8,5 @@ interface ITrackUseCases {
     val saveRepeatModeUseCase: SaveRepeatModeUseCase
     val readRepeatModeUseCase: ReadRepeatModeUseCase
     val upsertTrackUseCase: UpsertTrackUseCase
-    val loadTracksToDatabaseUseCase: LoadTracksToDatabaseUseCase
-    val deleteNoLongerExistingTracksFromDatabaseUseCase: DeleteNoLongerExistingTracksFromDatabaseUseCase
+    val updateTrackDataBaseUseCase: UpdateTrackDataBaseUseCase
 }

@@ -26,5 +26,5 @@ interface ITrackRepository {
 //    suspend fun getArtistsWithTracks(): Map<String, List<Track>>
 
     suspend fun loadTracksToDatabase()
-    suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase(tracks :List<TrackDomain>)
+    suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase()
 }
