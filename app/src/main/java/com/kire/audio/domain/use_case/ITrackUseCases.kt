@@ -1,6 +1,6 @@
 package com.kire.audio.domain.use_case
 
-interface ITrackUseCases {
+sealed interface ITrackUseCases {
     val getSortedTracksUseCase: GetSortedTracksUseCase
     val getFavouriteTracksUseCase: GetFavouriteTracksUseCase
     val saveSortOptionUseCase: SaveSortOptionUseCase
@@ -9,4 +9,5 @@ interface ITrackUseCases {
     val readRepeatModeUseCase: ReadRepeatModeUseCase
     val upsertTrackUseCase: UpsertTrackUseCase
     val updateTrackDataBaseUseCase: UpdateTrackDataBaseUseCase
+    val getTrackLyricsFromGenius: GetTrackLyricsFromGenius
 }

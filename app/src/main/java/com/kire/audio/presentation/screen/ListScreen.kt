@@ -214,7 +214,8 @@ fun ListScreen(
                 upsertTrack = viewModel::upsertTrack,
                 selectListOfTracks = viewModel::selectListOfTracks,
                 saveRepeatMode = viewModel::saveRepeatMode,
-                mediaController = mediaController!!
+                mediaController = mediaController!!,
+                getTrackLyricsFromGenius = viewModel::getTrackLyricsFromGenius
             )
         }
     }

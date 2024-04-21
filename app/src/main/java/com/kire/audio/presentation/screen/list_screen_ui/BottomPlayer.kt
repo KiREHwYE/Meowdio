@@ -25,9 +25,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.session.MediaController
 import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
+import com.kire.audio.presentation.model.ILyricsRequestState
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.screen.PlayerScreen
+import com.kire.audio.presentation.util.LyricsRequestMode
 import com.kire.audio.screen.functional.ListSelector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +43,7 @@ fun BottomPlayer(
     saveRepeatMode: (Int) -> Unit,
     selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     mediaController: MediaController,
+    getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -182,7 +185,8 @@ fun BottomPlayer(
                                 changeTrackUiState(trackUiState.copy(isPlaying = false))
                             }
                         }
-                    }
+                    },
+                    getTrackLyricsFromGenius = getTrackLyricsFromGenius
                 )
             }
         }

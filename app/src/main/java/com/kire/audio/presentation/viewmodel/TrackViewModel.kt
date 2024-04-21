@@ -8,14 +8,18 @@ import com.kire.audio.domain.use_case.ITrackUseCases
 import com.kire.audio.screen.functional.ListSelector
 
 import com.kire.audio.presentation.functional.events.SortOptionEvent
+import com.kire.audio.presentation.mapper.asILyricsRequestState
 import com.kire.audio.presentation.util.SortType
 import com.kire.audio.presentation.mapper.asListOfTrack
+import com.kire.audio.presentation.mapper.asLyricsRequestModeDomain
 import com.kire.audio.presentation.mapper.asSortType
 import com.kire.audio.presentation.mapper.asSortTypeDomain
 import com.kire.audio.presentation.mapper.asTrackDomain
+import com.kire.audio.presentation.model.ILyricsRequestState
 import com.kire.audio.presentation.model.SearchUiState
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
+import com.kire.audio.presentation.util.LyricsRequestMode
 import kotlinx.coroutines.CoroutineDispatcher
 
 import kotlinx.coroutines.Dispatchers
@@ -84,6 +88,19 @@ class TrackViewModel @Inject constructor(
     ) = _trackUiState.update { _ ->
         trackUiState
     }
+
+    fun getTrackLyricsFromGenius(
+        mode: LyricsRequestMode,
+        title: String?,
+        artist: String?,
+        userInput: String?,
+    ): ILyricsRequestState =
+        trackUseCases.getTrackLyricsFromGenius(
+            mode = mode.asLyricsRequestModeDomain(),
+            title,
+            artist,
+            userInput
+        ).asILyricsRequestState()
 
     /*
      * DataStore funcs

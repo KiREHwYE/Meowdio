@@ -21,12 +21,14 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
 
 import com.kire.audio.device.audio.functional.SkipTrackAction
+import com.kire.audio.presentation.model.ILyricsRequestState
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.screen.functional.ListSelector
 import com.kire.audio.presentation.screen.player_screen_ui.Background
 import com.kire.audio.presentation.screen.player_screen_ui.FunctionalBlock
 import com.kire.audio.presentation.screen.player_screen_ui.ImageAndTextBlock
+import com.kire.audio.presentation.util.LyricsRequestMode
 
 import kotlinx.coroutines.flow.StateFlow
 
@@ -40,6 +42,7 @@ fun PlayerScreen(
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
     play: () -> Unit,
     mediaController: MediaController,
+    getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
 ){
 
     var duration: Float by remember { mutableFloatStateOf(0f) }
@@ -68,7 +71,8 @@ fun PlayerScreen(
             ImageAndTextBlock(
                 trackUiState = trackUiState,
                 changeTrackUiState = changeTrackUiState,
-                upsertTrack = upsertTrack
+                upsertTrack = upsertTrack,
+                getTrackLyricsFromGenius = getTrackLyricsFromGenius
             )
 
             FunctionalBlock(

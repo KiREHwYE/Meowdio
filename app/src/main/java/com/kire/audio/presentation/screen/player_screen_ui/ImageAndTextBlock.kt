@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,121 +54,65 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.kire.audio.R
 import com.kire.audio.presentation.functional.bounceClick
+import com.kire.audio.presentation.model.ILyricsRequestState
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.util.CardFace
 import com.kire.audio.presentation.util.LyricsRequestMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.jsoup.Jsoup
-import java.io.IOException
 
 @Composable
 fun ImageAndTextBlock(
     trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
-    upsertTrack: suspend (Track) -> Unit
+    upsertTrack: suspend (Track) -> Unit,
+    getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
 ){
+    val coroutineScope = rememberCoroutineScope()
 
     val waitingMessage = stringResource(R.string.lyrics_dialog_waiting_message)
     val unsuccessfulMessage = stringResource(R.string.lyrics_dialog_unsuccessful_message)
 
-    var defaultMessage by remember { mutableStateOf(waitingMessage) }
-
-    val coroutineScope = rememberCoroutineScope()
-
-    val lyrics = remember { mutableStateOf(trackUiState.currentTrackPlaying?.lyrics) }
+    val userInput = remember { mutableStateOf(trackUiState.currentTrackPlaying?.lyrics) }
 
     var isEnabled by rememberSaveable { mutableStateOf(false) }
 
     var switcher by remember { mutableStateOf(LyricsRequestMode.DEFAULT) }
 
+    val track = trackUiState.currentTrackPlaying
 
-    fun String.toAllowedForm(): String {
-        val notAllowedCharacters = "[^\\sa-zA-Z0-9_-]".toRegex()
-        val hyphen = "[\\s_]+".toRegex()
-
-        return this.trim().lowercase().replace("&", "and").replace(notAllowedCharacters, "")
-            .replace(hyphen, "-").run {
-                if (this.contains("feat")) this.removeRange(
-                    this.indexOf("feat") - 1,
-                    this.length
-                ) else this
-            }
+    val lyricsRequestState: MutableState<ILyricsRequestState> = remember {
+        mutableStateOf(ILyricsRequestState.onRequest)
     }
 
-    val lyricsRequest: (mode: LyricsRequestMode) -> Unit = {
+    LaunchedEffect(key1 = track?.path) {
+        if (track?.lyrics?.isEmpty() == true) {
+            lyricsRequestState.value = ILyricsRequestState.onRequest
 
-        coroutineScope.launch(Dispatchers.IO) {
-            try {
-                val title =
-                    trackUiState.currentTrackPlaying?.title?.toAllowedForm()
-
-                val artist =
-                    trackUiState.currentTrackPlaying?.artist?.toAllowedForm()?.replaceFirstChar(Char::titlecase)
-
-                val url =
-                    when(it) {
-                        LyricsRequestMode.BY_LINK -> lyrics.value.also {
-                            lyrics.value = ""
-                            defaultMessage = waitingMessage
-                        }
-                        LyricsRequestMode.BY_TITLE_AND_ARTIST -> {
-
-                            val urlPart = lyrics.value?.toAllowedForm()?.replaceFirstChar(Char::titlecase)
-                            lyrics.value = ""
-                            defaultMessage = waitingMessage
-                            ("https://genius.com/$urlPart-lyrics").replace("--+".toRegex(), "-")
-                        }
-                        else -> {
-                            ("https://genius.com/$artist-$title-lyrics").replace("--+".toRegex(), "-")
-                        }
-                    }
-
-                var doc: org.jsoup.nodes.Document =
-                    Jsoup.connect(url).userAgent(
-                        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20100101 Firefox/5.0"
-                    ).get()
-                val temp = doc.html().replace("<br>", "$$$")
-                doc = Jsoup.parse(temp)
-
-                val elements = doc.select("div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
-
-                var text = ""
-
-                for (i in 0 until elements.size)
-                    text += elements.eq(i).text().replace("$$$", "\n")
-
-                lyrics.value = text
-
-                trackUiState.currentTrackPlaying?.let { track ->
-                    upsertTrack(track.copy(lyrics = lyrics.value ?: "No lyrics"))
-                }
-
-            } catch (e: IOException) {
-
-                if (it != LyricsRequestMode.BY_LINK)
-                    lyrics.value = ""
-
-                defaultMessage = unsuccessfulMessage
-            }
-        }
-
-        switcher = LyricsRequestMode.DEFAULT
-    }
-
-    LaunchedEffect(trackUiState.currentTrackPlaying?.path) {
-        if (trackUiState.currentTrackPlaying?.lyrics?.isEmpty() == true) {
-            defaultMessage = waitingMessage
-            lyrics.value = ""
+            userInput.value = ""
             switcher = LyricsRequestMode.DEFAULT
 
-            lyricsRequest(LyricsRequestMode.DEFAULT)
+            this.launch(Dispatchers.IO) {
+                lyricsRequestState.value = getTrackLyricsFromGenius(LyricsRequestMode.DEFAULT, track.title, track.artist, userInput.value).also {
+                    if (it is ILyricsRequestState.Success){
+                        userInput.value = it.lyrics
+                    }
+                }
+            }
+
         }
         else
-            lyrics.value = trackUiState.currentTrackPlaying?.lyrics
+            userInput.value = track?.lyrics
     }
 
+    LaunchedEffect(key1 = lyricsRequestState) {
+        if (lyricsRequestState.value is ILyricsRequestState.Success){
+            track?.let { tr ->
+                upsertTrack(tr.copy(lyrics = (lyricsRequestState.value as ILyricsRequestState.Success).lyrics.also { userInput.value = it }))
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -234,7 +179,7 @@ fun ImageAndTextBlock(
                                 start = 32.dp,
                                 end = 32.dp,
                             ),
-                        verticalArrangement =  Arrangement.spacedBy(if (!isEnabled && lyrics.value?.isEmpty() == true && defaultMessage == waitingMessage) 0.dp else 28.dp),
+                        verticalArrangement =  Arrangement.spacedBy(if (!isEnabled && userInput.value?.isEmpty() == true && lyricsRequestState.value == ILyricsRequestState.onRequest) 0.dp else 28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
@@ -264,10 +209,10 @@ fun ImageAndTextBlock(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .bounceClick {
-                                                    lyrics.value = ""
+                                                    userInput.value = ""
                                                 }
                                         )
-                                    else if (lyrics.value?.isEmpty() == true && defaultMessage == unsuccessfulMessage){
+                                    else if (userInput.value?.isEmpty() == true && lyricsRequestState.value == ILyricsRequestState.Unsuccess){
                                         Icon(
                                             imageVector = Icons.Rounded.Refresh,
                                             contentDescription = "",
@@ -275,8 +220,14 @@ fun ImageAndTextBlock(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .bounceClick {
-                                                    defaultMessage = waitingMessage
-                                                    lyricsRequest(LyricsRequestMode.DEFAULT)
+                                                    lyricsRequestState.value =
+                                                        ILyricsRequestState.onRequest
+
+                                                    coroutineScope.launch(Dispatchers.IO) {
+                                                        lyricsRequestState.value =
+                                                            getTrackLyricsFromGenius(LyricsRequestMode.DEFAULT, track?.title, track?.artist, userInput.value)
+                                                    }
+
                                                 }
                                         )
                                     }
@@ -298,13 +249,21 @@ fun ImageAndTextBlock(
                                         .size(18.dp)
                                         .bounceClick {
                                             isEnabled = !isEnabled.also {
-                                                if (!lyrics.equals(trackUiState.currentTrackPlaying?.lyrics))
-                                                    if (switcher == LyricsRequestMode.BY_LINK || switcher == LyricsRequestMode.BY_TITLE_AND_ARTIST || (lyrics.value?.isEmpty() == true && it))
-                                                        lyricsRequest(switcher)
+                                                if (!userInput.equals(track?.lyrics))
+                                                    if (switcher == LyricsRequestMode.BY_LINK || switcher == LyricsRequestMode.BY_TITLE_AND_ARTIST || (userInput.value?.isEmpty() == true && it))
+                                                        coroutineScope.launch(Dispatchers.IO) {
+                                                            lyricsRequestState.value =
+                                                                getTrackLyricsFromGenius(switcher, track?.title, track?.artist, userInput.value)
+                                                        }
                                                     else
-                                                        coroutineScope.launch(Dispatchers.Default) {
-                                                            trackUiState.currentTrackPlaying?.let { track ->
-                                                                upsertTrack(track.copy(lyrics = lyrics.value ?: "No lyrics"))
+                                                        coroutineScope.launch(Dispatchers.IO) {
+                                                            track?.let { track ->
+                                                                upsertTrack(
+                                                                    track.copy(
+                                                                        lyrics = userInput.value
+                                                                            ?: "No lyrics"
+                                                                    )
+                                                                )
                                                             }
 
                                                         }
@@ -344,7 +303,7 @@ fun ImageAndTextBlock(
                                         .wrapContentHeight()
                                         .bounceClick {
                                             switcher = LyricsRequestMode.BY_LINK
-                                            lyrics.value = ""
+                                            userInput.value = ""
                                         },
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -372,7 +331,7 @@ fun ImageAndTextBlock(
                                         .wrapContentHeight()
                                         .bounceClick {
                                             switcher = LyricsRequestMode.BY_TITLE_AND_ARTIST
-                                            lyrics.value = ""
+                                            userInput.value = ""
                                         },
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -422,7 +381,7 @@ fun ImageAndTextBlock(
                                 }
                             }
 
-                        if (isEnabled || lyrics.value?.isNotEmpty() == true)
+                        if (isEnabled || userInput.value?.isNotEmpty() == true)
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -436,9 +395,9 @@ fun ImageAndTextBlock(
                                             MaterialTheme.shapes.small,
                                         )
                                         .fillMaxWidth(),
-                                    value = if (switcher != LyricsRequestMode.SELECTOR_IS_VISIBLE) lyrics.value ?: "No lyrics" else "",
+                                    value = if (switcher != LyricsRequestMode.SELECTOR_IS_VISIBLE) userInput.value ?: "No lyrics" else "",
                                     onValueChange = {
-                                        lyrics.value = it
+                                        userInput.value = it
                                     },
                                     enabled = isEnabled,
                                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -454,7 +413,7 @@ fun ImageAndTextBlock(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Box(Modifier.weight(1f)) {
-                                                if (switcher != LyricsRequestMode.SELECTOR_IS_VISIBLE && lyrics.value?.isEmpty() == true) {
+                                                if (switcher != LyricsRequestMode.SELECTOR_IS_VISIBLE && userInput.value?.isEmpty() == true) {
                                                     if (switcher == LyricsRequestMode.BY_LINK)
                                                         Text(
                                                             text = "Link example: https://genius.com/While-she-sleeps-feel-lyrics",
@@ -482,7 +441,7 @@ fun ImageAndTextBlock(
                         else
                             Box(
                                 modifier =
-                                if (defaultMessage == waitingMessage)
+                                if (lyricsRequestState.value == ILyricsRequestState.onRequest)
                                     Modifier
                                         .fillMaxSize()
                                         .weight(1f, fill = false)
@@ -493,14 +452,18 @@ fun ImageAndTextBlock(
                                 contentAlignment = Alignment.Center
                             ){
 
-                                if (!isEnabled && lyrics.value?.isEmpty() == true && switcher == LyricsRequestMode.DEFAULT){
+                                if (!isEnabled && userInput.value?.isEmpty() == true && switcher == LyricsRequestMode.DEFAULT){
                                     Text(
-                                        text = defaultMessage,
+                                        text = when(lyricsRequestState.value){
+                                            is ILyricsRequestState.Success -> (lyricsRequestState.value as ILyricsRequestState.Success).lyrics
+                                            is ILyricsRequestState.Unsuccess -> unsuccessfulMessage
+                                            is ILyricsRequestState.onRequest -> waitingMessage
+                                        },
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         fontSize = 20.sp,
                                         fontFamily = FontFamily.SansSerif,
                                         fontWeight = FontWeight.W600,
-                                        textAlign = if (defaultMessage == waitingMessage) TextAlign.Center else TextAlign.Start,
+                                        textAlign = if (lyricsRequestState.value == ILyricsRequestState.onRequest) TextAlign.Center else TextAlign.Start,
                                     )
                                 }
                             }
