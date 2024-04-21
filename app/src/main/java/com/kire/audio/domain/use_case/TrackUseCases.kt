@@ -1,7 +1,6 @@
 package com.kire.audio.domain.use_case
 
 import javax.inject.Inject
-
 data class TrackUseCases @Inject constructor(
     override val getSortedTracksUseCase: GetSortedTracksUseCase,
     override val getFavouriteTracksUseCase: GetFavouriteTracksUseCase,

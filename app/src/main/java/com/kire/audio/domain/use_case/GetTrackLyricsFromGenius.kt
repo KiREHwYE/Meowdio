@@ -1,9 +1,7 @@
 package com.kire.audio.domain.use_case
 
-import com.kire.audio.di.IoDispatcher
 import com.kire.audio.domain.model.ILyricsRequestStateDomain
 import com.kire.audio.domain.util.LyricsRequestModeDomain
-import kotlinx.coroutines.CoroutineDispatcher
 import org.jsoup.Jsoup
 import java.io.IOException
 import javax.inject.Inject
