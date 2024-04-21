@@ -73,16 +73,6 @@ android {
             )
             versionNameSuffix = "-beta1"
         }
-        alpha {
-            minifyEnabled true
-            shrinkResources true
-            
-            proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro"
-            )
-            versionNameSuffix = "-alpha1"
-        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
