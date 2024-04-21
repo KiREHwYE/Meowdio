@@ -100,7 +100,6 @@ fun ImageAndTextBlock(
                     }
                 }
             }
-
         }
         else
             userInput.value = track?.lyrics
