@@ -13,6 +13,9 @@ import android.view.WindowManager
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -25,6 +28,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -34,9 +38,17 @@ import com.kire.audio.device.audio.MediaControllerManager
 import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
+import com.kire.audio.device.audio.rememberManagedMediaController
 import com.kire.audio.presentation.screen.ListScreen
+import com.kire.audio.presentation.screen.NavGraphs
+import com.kire.audio.presentation.screen.PlayerScreen
+import com.kire.audio.presentation.screen.destinations.ListScreenDestination
+import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
 import com.kire.audio.presentation.theme.AudioTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
+import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
+import com.ramcosta.composedestinations.manualcomposablecalls.composable
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 
@@ -51,6 +63,7 @@ class MainActivity : ComponentActivity() {
 
     private var factory: ListenableFuture<MediaController>? = null
 
+    @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -62,7 +75,28 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AudioTheme {
-                ListScreen(viewModel)
+
+                val mediaController by rememberManagedMediaController()
+
+                val navHostEngine = rememberAnimatedNavHostEngine(
+                    navHostContentAlignment = Alignment.TopCenter)
+
+                DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine) {
+                    composable(ListScreenDestination) {
+                        ListScreen(
+                            viewModel = viewModel,
+                            navigator = destinationsNavigator,
+                            mediaController = mediaController
+                        )
+                    }
+                    composable(PlayerScreenDestination) {
+                        PlayerScreen(
+                            viewModel = viewModel,
+                            navigator = destinationsNavigator,
+                            mediaController = mediaController
+                        )
+                    }
+                }
             }
         }
 

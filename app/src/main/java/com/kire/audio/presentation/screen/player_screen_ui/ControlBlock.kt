@@ -41,7 +41,7 @@ fun ControlBlock(
     skipTrack: (SkipTrackAction) -> Unit,
     mediaController: MediaController,
     saveRepeatMode: (Int) -> Unit,
-    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     play: () -> Unit
 ) {
 
@@ -149,7 +149,7 @@ fun ControlBlock(
                 trackUiState = trackUiState,
                 changeTrackUiState = changeTrackUiState,
                 mediaController = mediaController,
-                favouriteTracks = selectListTracks(ListSelector.FAVOURITE_LIST),
+                favouriteTracks = selectListOfTracks(ListSelector.FAVOURITE_LIST),
                 upsertTrack = upsertTrack,
                 changeOpenDialog = {isIt ->
                     openDialog = isIt

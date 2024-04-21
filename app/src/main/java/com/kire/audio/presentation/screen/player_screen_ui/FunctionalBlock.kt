@@ -20,7 +20,7 @@ fun FunctionalBlock(
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
     skipTrack: (SkipTrackAction) -> Unit,
-    selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
+    selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     saveRepeatMode: (Int) -> Unit,
     durationGet: () -> Float,
     mediaController: MediaController,
@@ -47,7 +47,7 @@ fun FunctionalBlock(
             saveRepeatMode = saveRepeatMode,
             play = play,
             mediaController = mediaController,
-            selectListTracks = selectListTracks
+            selectListOfTracks = selectListOfTracks
         )
     }
 }

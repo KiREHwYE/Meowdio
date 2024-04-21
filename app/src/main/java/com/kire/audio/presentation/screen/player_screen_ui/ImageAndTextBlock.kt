@@ -59,12 +59,14 @@ import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.util.CardFace
 import com.kire.audio.presentation.util.LyricsRequestMode
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
 fun ImageAndTextBlock(
     trackUiState: TrackUiState,
+    navigator: DestinationsNavigator,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
     getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
@@ -125,7 +127,8 @@ fun ImageAndTextBlock(
         Header(
             trackUiState = trackUiState,
             changeTrackUiState = changeTrackUiState,
-            upsertTrack = upsertTrack
+            upsertTrack = upsertTrack,
+            navigator = navigator
         )
 
         Column(

@@ -20,6 +20,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.kire.audio.presentation.functional.bounceClick
 
@@ -49,9 +51,14 @@ fun UserActionBar(
 
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
                     .width(120.dp)
                     .height(56.dp)
+                    .shadow(
+                        elevation = 5.dp,
+                        spotColor = Color.Black,
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    .clip(RoundedCornerShape(24.dp))
                     .background(color = MaterialTheme.colorScheme.onBackground)
                     .align(Alignment.Top),
                 contentAlignment = Alignment.Center

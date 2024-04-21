@@ -44,10 +44,11 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.media3.session.MediaController
 
 import com.kire.audio.device.audio.functional.PlayerState
-import com.kire.audio.device.audio.rememberManagedMediaController
 import com.kire.audio.device.audio.functional.state
+import com.kire.audio.presentation.navigation.ListScreenTransitions
 import com.kire.audio.presentation.screen.list_screen_ui.BottomPlayer
 import com.kire.audio.screen.functional.GetPermissions
 import com.kire.audio.screen.functional.ListSelector
@@ -58,12 +59,18 @@ import com.kire.audio.presentation.screen.list_screen_ui.ScrollToTopButton
 import com.kire.audio.presentation.screen.list_screen_ui.SearchBar
 import com.kire.audio.presentation.screen.list_screen_ui.TrackItem
 import com.kire.audio.presentation.screen.list_screen_ui.UserActionBar
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootNavGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
+@RootNavGraph(start = true)
+@Destination(style = ListScreenTransitions::class)
 @Composable
 fun ListScreen(
-    viewModel: TrackViewModel
+    viewModel: TrackViewModel,
+    navigator: DestinationsNavigator,
+    mediaController: MediaController?
 ) {
-    val mediaController by rememberManagedMediaController()
 
     var playerState: PlayerState? by remember {
         mutableStateOf(mediaController?.state())
@@ -147,7 +154,7 @@ fun ListScreen(
                                         changeTrackUiState = viewModel::changeTrackUiState,
                                         searchUiState = searchUiState,
                                         changeSearchUiState = viewModel::changeSearchUiState,
-                                        mediaController = mediaController!!,
+                                        mediaController = mediaController,
                                         upsertTrack = viewModel::upsertTrack,
                                         selectListTracks = viewModel::selectListOfTracks
                                     )
@@ -169,7 +176,7 @@ fun ListScreen(
                             changeTrackUiState = viewModel::changeTrackUiState,
                             upsertTrack = viewModel::upsertTrack,
                             selector = ListSelector.MAIN_LIST,
-                            mediaController = mediaController!!,
+                            mediaController = mediaController,
                             listINDEX = listIndex,
                             modifier = Modifier
                         )
@@ -211,11 +218,9 @@ fun ListScreen(
             BottomPlayer(
                 _trackUiState = viewModel.trackUiState,
                 changeTrackUiState = viewModel::changeTrackUiState,
-                upsertTrack = viewModel::upsertTrack,
                 selectListOfTracks = viewModel::selectListOfTracks,
-                saveRepeatMode = viewModel::saveRepeatMode,
-                mediaController = mediaController!!,
-                getTrackLyricsFromGenius = viewModel::getTrackLyricsFromGenius
+                mediaController = mediaController,
+                navigator = navigator
             )
         }
     }

@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,22 +22,19 @@ import androidx.compose.ui.unit.dp
 import com.kire.audio.presentation.functional.bounceClick
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Composable
 fun Header(
     trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
-    upsertTrack: suspend (Track) -> Unit
+    upsertTrack: suspend (Track) -> Unit,
+    navigator: DestinationsNavigator
 ){
 
     var openDialog by remember {
         mutableStateOf(false)
     }
-
-    val coroutineScope = rememberCoroutineScope()
-
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -55,9 +51,7 @@ fun Header(
                 .size(30.dp)
                 .alpha(0.8f)
                 .bounceClick {
-                    coroutineScope.launch(Dispatchers.IO) {
-                        changeTrackUiState(trackUiState.copy(isPlayerScreenExpanded = false))
-                    }
+                    navigator.navigateUp()
                 },
             tint = Color.White
         )
