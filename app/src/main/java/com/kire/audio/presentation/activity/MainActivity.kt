@@ -13,6 +13,7 @@ import android.view.WindowManager
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
+
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 
 import com.google.common.util.concurrent.ListenableFuture
@@ -39,22 +41,24 @@ import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.rememberManagedMediaController
-import com.kire.audio.device.audio.skipTrack
+
 import com.kire.audio.presentation.screen.ListScreen
 import com.kire.audio.presentation.screen.NavGraphs
 import com.kire.audio.presentation.screen.PlayerScreen
 import com.kire.audio.presentation.screen.destinations.ListScreenDestination
 import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
-import com.kire.audio.presentation.screen.list_screen_ui.AutoSkipOnRepeatMode
 import com.kire.audio.presentation.theme.AudioTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
+
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
 import com.ramcosta.composedestinations.manualcomposablecalls.composable
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 
+import dagger.hilt.android.AndroidEntryPoint
+
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 import javax.inject.Inject
 
 @UnstableApi
