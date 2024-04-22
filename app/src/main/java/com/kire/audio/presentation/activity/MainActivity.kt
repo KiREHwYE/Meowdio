@@ -39,11 +39,13 @@ import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.rememberManagedMediaController
+import com.kire.audio.device.audio.skipTrack
 import com.kire.audio.presentation.screen.ListScreen
 import com.kire.audio.presentation.screen.NavGraphs
 import com.kire.audio.presentation.screen.PlayerScreen
 import com.kire.audio.presentation.screen.destinations.ListScreenDestination
 import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
+import com.kire.audio.presentation.screen.list_screen_ui.AutoSkipOnRepeatMode
 import com.kire.audio.presentation.theme.AudioTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -80,6 +82,7 @@ class MainActivity : ComponentActivity() {
 
                 val navHostEngine = rememberAnimatedNavHostEngine(
                     navHostContentAlignment = Alignment.TopCenter)
+
 
                 DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine) {
                     composable(ListScreenDestination) {

@@ -3,7 +3,6 @@ package com.kire.audio.presentation.screen.list_screen_ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,37 +21,34 @@ fun AutoSkipOnRepeatMode(
     mediaController: MediaController,
     skipTrack: (SkipTrackAction) -> Unit
 ){
-    var sliderPosition by remember {
-        mutableFloatStateOf(mediaController.currentPosition.toFloat())
-    }
 
-    var minutesCur by remember { mutableLongStateOf(TimeUnit.MILLISECONDS.toMinutes(mediaController.currentPosition)) }
-    var secondsCur by  remember { mutableLongStateOf((TimeUnit.MILLISECONDS.toSeconds(mediaController.currentPosition) % 60)) }
+    var minutesCurrent by remember { mutableLongStateOf(TimeUnit.MILLISECONDS.toMinutes(mediaController.currentPosition)) }
+    var secondsCurrent by  remember { mutableLongStateOf((TimeUnit.MILLISECONDS.toSeconds(mediaController.currentPosition) % 60)) }
     var minutesAll by remember { mutableLongStateOf(TimeUnit.MILLISECONDS.toMinutes(mediaController.duration)) }
     var secondsAll by remember { mutableLongStateOf((TimeUnit.MILLISECONDS.toSeconds(mediaController.duration) % 60)) }
 
-    LaunchedEffect(Unit) {
-        while(true) {
-            sliderPosition = mediaController.currentPosition.toFloat()
-            delay(1.seconds / 70)
-        }
-    }
-
-    LaunchedEffect(key1 = sliderPosition){
-        minutesCur = TimeUnit.MILLISECONDS.toMinutes(mediaController.currentPosition)
-        secondsCur = TimeUnit.MILLISECONDS.toSeconds(mediaController.currentPosition) % 60
+    LaunchedEffect(key1 = trackUiState.currentTrackPlaying?.path) {
         minutesAll = TimeUnit.MILLISECONDS.toMinutes(mediaController.duration)
         secondsAll = TimeUnit.MILLISECONDS.toSeconds(mediaController.duration) % 60
     }
 
-    LaunchedEffect(minutesCur.toInt() == minutesAll.toInt()
-            && secondsCur.toInt() == secondsAll.toInt() &&
-            !(minutesAll.toInt() == 0 && secondsAll.toInt() == 0)
+    LaunchedEffect(Unit) {
+        while(true) {
+            minutesCurrent = if (minutesCurrent == TimeUnit.MILLISECONDS.toMinutes(mediaController.currentPosition)) minutesCurrent else TimeUnit.MILLISECONDS.toMinutes(mediaController.currentPosition)
+            secondsCurrent = TimeUnit.MILLISECONDS.toSeconds(mediaController.currentPosition) % 60
+            delay(1.seconds / 70)
+        }
+    }
+
+    LaunchedEffect(
+        minutesCurrent == minutesAll &&
+                secondsCurrent == secondsAll &&
+                !(minutesAll == 0L && secondsAll == 0L)
     ) {
 
-        if (minutesCur.toInt() == minutesAll.toInt()
-            && secondsCur.toInt() == secondsAll.toInt() &&
-            !(minutesAll.toInt() == 0 && secondsAll.toInt() == 0)
+        if (minutesCurrent == minutesAll &&
+            secondsCurrent == secondsAll &&
+            !(minutesAll == 0L && secondsAll == 0L)
         )
             when (trackUiState.trackRepeatMode) {
                 RepeatMode.REPEAT_ONCE -> skipTrack(SkipTrackAction.NEXT)

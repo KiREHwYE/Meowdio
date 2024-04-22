@@ -37,13 +37,13 @@ import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun BottomPlayer(
-    _trackUiState: StateFlow<TrackUiState>,
+    trackUiState: StateFlow<TrackUiState>,
     changeTrackUiState: (TrackUiState) -> Unit,
     navigator: DestinationsNavigator,
     selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     mediaController: MediaController,
 ) {
-    val trackUiState by _trackUiState.collectAsStateWithLifecycle()
+    val trackUiState by trackUiState.collectAsStateWithLifecycle()
 
     var currentTrackList = selectListOfTracks(trackUiState.currentListSelector).collectAsStateWithLifecycle().value
 

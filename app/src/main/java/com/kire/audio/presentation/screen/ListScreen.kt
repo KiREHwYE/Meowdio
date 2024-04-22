@@ -216,7 +216,7 @@ fun ListScreen(
             }
 
             BottomPlayer(
-                _trackUiState = viewModel.trackUiState,
+                trackUiState = viewModel.trackUiState,
                 changeTrackUiState = viewModel::changeTrackUiState,
                 selectListOfTracks = viewModel::selectListOfTracks,
                 mediaController = mediaController,
