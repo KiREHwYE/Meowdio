@@ -51,7 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import coil.compose.AsyncImage
+
 import com.kire.audio.R
 import com.kire.audio.presentation.functional.bounceClick
 import com.kire.audio.presentation.model.ILyricsRequestState
@@ -59,14 +61,14 @@ import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.util.CardFace
 import com.kire.audio.presentation.util.LyricsRequestMode
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
 fun ImageAndTextBlock(
     trackUiState: TrackUiState,
-    navigator: DestinationsNavigator,
+    navigateBack: () -> Unit,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
     getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
@@ -128,7 +130,7 @@ fun ImageAndTextBlock(
             trackUiState = trackUiState,
             changeTrackUiState = changeTrackUiState,
             upsertTrack = upsertTrack,
-            navigator = navigator
+            navigateBack = navigateBack
         )
 
         Column(

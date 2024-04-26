@@ -1,7 +1,9 @@
 package com.kire.audio.domain.repository
 
 import com.kire.audio.data.model.TrackEntity
+
 import com.kire.audio.domain.model.TrackDomain
+
 import kotlinx.coroutines.flow.Flow
 
 interface ITrackRepository {
@@ -23,7 +25,7 @@ interface ITrackRepository {
     fun getTracksOrderedByDurationASC(): Flow<List<TrackDomain>>
     fun getTracksOrderedByDurationDESC(): Flow<List<TrackDomain>>
 
-//    suspend fun getArtistsWithTracks(): Map<String, List<Track>>
+    suspend fun getAlbumsWithTracks(): Map<String, List<TrackDomain>>
 
     suspend fun loadTracksToDatabase()
     suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase()

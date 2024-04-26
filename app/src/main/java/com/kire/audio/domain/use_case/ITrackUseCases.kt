@@ -10,4 +10,5 @@ sealed interface ITrackUseCases {
     val upsertTrackUseCase: UpsertTrackUseCase
     val updateTrackDataBaseUseCase: UpdateTrackDataBaseUseCase
     val getTrackLyricsFromGenius: GetTrackLyricsFromGenius
+    val getAlbumsWithTracksUseCase: GetAlbumsWithTracksUseCase
 }

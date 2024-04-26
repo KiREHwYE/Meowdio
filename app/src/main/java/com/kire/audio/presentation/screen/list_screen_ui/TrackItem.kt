@@ -52,9 +52,10 @@ fun TrackItem(
     listINDEX: Int,
     trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
-    mediaController: MediaController,
+    mediaController: MediaController?,
     upsertTrack: suspend (Track) -> Unit,
     selector: ListSelector = ListSelector.MAIN_LIST,
+    showImage: Boolean = true,
     imageSize: Dp = 56.dp,
     textTitleSize: TextUnit = 17.sp,
     textArtistSize: TextUnit = 13.sp,
@@ -94,7 +95,7 @@ fun TrackItem(
                             )
                     )
 
-                    mediaController.apply {
+                    mediaController?.apply {
 
                         if (trackUiState.isPlaying && trackUiState.currentTrackPlayingURI == path)
                             pause()
@@ -117,16 +118,19 @@ fun TrackItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ){
-                    AsyncImage(
-                        model = imageUri,
-                        placeholder = painterResource(R.drawable.ic_launcher_foreground),
-                        contentScale = ContentScale.Crop,
-                        contentDescription = "Track Image",
-                        modifier = Modifier
-                            .height(imageSize)
-                            .width(imageSize)
-                            .clip(RoundedCornerShape(12.dp))
-                    )
+
+                    if (showImage)
+                        AsyncImage(
+                            model = imageUri,
+                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                            contentScale = ContentScale.Crop,
+                            contentDescription = "Track Image",
+                            modifier = Modifier
+                                .height(imageSize)
+                                .width(imageSize)
+                                .clip(RoundedCornerShape(12.dp))
+
+                        )
 
                     Text(
                         buildAnnotatedString {

@@ -49,12 +49,12 @@ import androidx.media3.session.MediaController
 import com.kire.audio.device.audio.functional.PlayerState
 import com.kire.audio.device.audio.functional.state
 import com.kire.audio.presentation.navigation.ListScreenTransitions
-import com.kire.audio.presentation.screen.list_screen_ui.BottomPlayer
+import com.kire.audio.presentation.screen.destinations.AlbumScreenDestination
 import com.kire.audio.screen.functional.GetPermissions
 import com.kire.audio.screen.functional.ListSelector
 import com.kire.audio.presentation.screen.list_screen_ui.DropDownMenu
 import com.kire.audio.presentation.screen.list_screen_ui.Header
-import com.kire.audio.presentation.screen.list_screen_ui.OnScrollListener
+import com.kire.audio.presentation.screen.cross_screen_ui.OnScrollListener
 import com.kire.audio.presentation.screen.list_screen_ui.ScrollToTopButton
 import com.kire.audio.presentation.screen.list_screen_ui.SearchBar
 import com.kire.audio.presentation.screen.list_screen_ui.TrackItem
@@ -102,7 +102,6 @@ fun ListScreen(
 
     OnScrollListener(
         listState = listState,
-        currentTrackPlaying = trackUiState.currentTrackPlaying,
         trackUiState = trackUiState,
         changeTrackUiState = viewModel::changeTrackUiState
     )
@@ -136,7 +135,10 @@ fun ListScreen(
                             Header(
                                 text = stringResource(
                                     id = R.string.listscreen_header
-                                )
+                                ),
+                                onSwipe = {
+                                    navigator.navigate(AlbumScreenDestination)
+                                }
                             )
 
                             UserActionBar(
@@ -214,14 +216,6 @@ fun ListScreen(
                     }
                 }
             }
-
-            BottomPlayer(
-                trackUiState = viewModel.trackUiState,
-                changeTrackUiState = viewModel::changeTrackUiState,
-                selectListOfTracks = viewModel::selectListOfTracks,
-                mediaController = mediaController,
-                navigator = navigator
-            )
         }
     }
 }

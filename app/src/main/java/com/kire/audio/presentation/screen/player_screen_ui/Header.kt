@@ -19,17 +19,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+
 import com.kire.audio.presentation.functional.bounceClick
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Composable
 fun Header(
     trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
-    navigator: DestinationsNavigator
+    navigateBack: () -> Unit
 ){
 
     var openDialog by remember {
@@ -51,7 +51,7 @@ fun Header(
                 .size(30.dp)
                 .alpha(0.8f)
                 .bounceClick {
-                    navigator.navigateUp()
+                    navigateBack()
                 },
             tint = Color.White
         )

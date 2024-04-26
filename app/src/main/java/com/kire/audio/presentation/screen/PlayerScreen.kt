@@ -35,14 +35,13 @@ import com.kire.audio.presentation.viewmodel.TrackViewModel
 import com.kire.audio.screen.functional.ListSelector
 
 import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Destination(style = PlayerScreenTransitions::class)
 @Composable
 fun PlayerScreen(
     viewModel: TrackViewModel,
     mediaController: MediaController?,
-    navigator: DestinationsNavigator
+    navigateBack: () -> Unit
 ){
 
     val trackUiState by viewModel.trackUiState.collectAsStateWithLifecycle()
@@ -61,7 +60,7 @@ fun PlayerScreen(
     } ?: 0f
 
     BackHandler {
-        navigator.navigateUp()
+        navigateBack()
         return@BackHandler
     }
 
@@ -71,10 +70,11 @@ fun PlayerScreen(
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
+
                     val (x, y) = dragAmount
 
                     if (y > 50 && x < 40 && x > -40) {
-                        navigator.navigateUp()
+                        navigateBack()
                     }
                 }
             },
@@ -94,7 +94,7 @@ fun PlayerScreen(
 
             ImageAndTextBlock(
                 trackUiState = trackUiState,
-                navigator = navigator,
+                navigateBack = navigateBack,
                 changeTrackUiState = viewModel::changeTrackUiState,
                 upsertTrack = viewModel::upsertTrack,
                 getTrackLyricsFromGenius = viewModel::getTrackLyricsFromGenius

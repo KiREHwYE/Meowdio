@@ -15,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 
@@ -41,18 +42,14 @@ import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.rememberManagedMediaController
-
-import com.kire.audio.presentation.screen.ListScreen
-import com.kire.audio.presentation.screen.NavGraphs
-import com.kire.audio.presentation.screen.PlayerScreen
-import com.kire.audio.presentation.screen.destinations.ListScreenDestination
+import com.kire.audio.presentation.navigation.NavigationUI
+import com.kire.audio.presentation.screen.cross_screen_ui.BottomBar
 import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
 import com.kire.audio.presentation.theme.AudioTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
 
-import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
-import com.ramcosta.composedestinations.manualcomposablecalls.composable
+import com.ramcosta.composedestinations.navigation.navigate
 
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -65,7 +62,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var viewModel: TrackViewModel
+    @Inject lateinit var trackViewModel: TrackViewModel
 
     private var factory: ListenableFuture<MediaController>? = null
 
@@ -80,30 +77,36 @@ class MainActivity : ComponentActivity() {
         setDisplayCutoutMode()
 
         setContent {
+
+            val navHostEngine = rememberAnimatedNavHostEngine(navHostContentAlignment = Alignment.TopCenter)
+            val navHostController = navHostEngine.rememberNavController()
+
+            val mediaController by rememberManagedMediaController()
+
             AudioTheme {
-
-                val mediaController by rememberManagedMediaController()
-
-                val navHostEngine = rememberAnimatedNavHostEngine(
-                    navHostContentAlignment = Alignment.TopCenter)
-
-
-                DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine) {
-                    composable(ListScreenDestination) {
-                        ListScreen(
-                            viewModel = viewModel,
-                            navigator = destinationsNavigator,
-                            mediaController = mediaController
+                Scaffold(
+                    bottomBar = {
+                        BottomBar(
+                            trackUiState = trackViewModel.trackUiState,
+                            mediaController = mediaController,
+                            selectListOfTracks = trackViewModel::selectListOfTracks,
+                            changeTrackUiState = trackViewModel::changeTrackUiState,
+                            navigateTo = {
+                                navHostController.navigate(PlayerScreenDestination)
+                            }
                         )
                     }
-                    composable(PlayerScreenDestination) {
-                        PlayerScreen(
-                            viewModel = viewModel,
-                            navigator = destinationsNavigator,
-                            mediaController = mediaController
-                        )
-                    }
+                ) {
+                    val pdv = it
+
+                    NavigationUI(
+                        trackViewModel = trackViewModel,
+                        mediaController = mediaController,
+                        navController = navHostController,
+                        navHostEngine = navHostEngine
+                    )
                 }
+
             }
         }
 
@@ -111,19 +114,19 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 launch(Dispatchers.IO) {
                     MediaCommands.isPlayRequired.collect {
-                        viewModel.changeTrackUiState(trackUiState = viewModel.trackUiState.value.copy(isPlaying = it))
+                        trackViewModel.changeTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
                     }
                 }
                 launch {
                     MediaCommands.isPreviousTrackRequired.collect {
                         if (it)
-                            skipTrack(this@MainActivity, SkipTrackAction.PREVIOUS, viewModel)
+                            skipTrack(this@MainActivity, SkipTrackAction.PREVIOUS, trackViewModel)
                     }
                 }
                 launch {
                     MediaCommands.isNextTrackRequired.collect {
                         if (it)
-                            skipTrack(this@MainActivity, SkipTrackAction.NEXT, viewModel)
+                            skipTrack(this@MainActivity, SkipTrackAction.NEXT, trackViewModel)
                     }
                 }
 

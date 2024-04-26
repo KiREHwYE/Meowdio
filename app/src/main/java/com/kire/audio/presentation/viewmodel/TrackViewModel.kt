@@ -12,6 +12,7 @@ import com.kire.audio.presentation.mapper.asILyricsRequestState
 import com.kire.audio.presentation.util.SortType
 import com.kire.audio.presentation.mapper.asListOfTrack
 import com.kire.audio.presentation.mapper.asLyricsRequestModeDomain
+import com.kire.audio.presentation.mapper.asMapAlbumListTrack
 import com.kire.audio.presentation.mapper.asSortType
 import com.kire.audio.presentation.mapper.asSortTypeDomain
 import com.kire.audio.presentation.mapper.asTrackDomain
@@ -67,6 +68,8 @@ class TrackViewModel @Inject constructor(
                 SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList()
             )
+
+    var artistWithTracks: Map<String, List<Track>> = emptyMap()
 
     fun selectListOfTracks(selectList: ListSelector): StateFlow<List<Track>> =
         when(selectList){
@@ -181,6 +184,11 @@ class TrackViewModel @Inject constructor(
                             trackRepeatMode = it
                         )
                     }
+                }
+            }
+            launch {
+                viewModelScope.launch(coroutineDispatcher) {
+                    artistWithTracks = trackUseCases.getAlbumsWithTracksUseCase().asMapAlbumListTrack()
                 }
             }
         }

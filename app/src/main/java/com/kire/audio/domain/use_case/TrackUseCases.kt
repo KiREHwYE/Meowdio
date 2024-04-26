@@ -10,5 +10,6 @@ data class TrackUseCases @Inject constructor(
     override val readRepeatModeUseCase: ReadRepeatModeUseCase,
     override val upsertTrackUseCase: UpsertTrackUseCase,
     override val updateTrackDataBaseUseCase: UpdateTrackDataBaseUseCase,
-    override val getTrackLyricsFromGenius: GetTrackLyricsFromGenius
+    override val getTrackLyricsFromGenius: GetTrackLyricsFromGenius,
+    override val getAlbumsWithTracksUseCase: GetAlbumsWithTracksUseCase
 ): ITrackUseCases

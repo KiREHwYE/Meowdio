@@ -1,25 +1,27 @@
 package com.kire.audio.data.repository
 
 import android.annotation.SuppressLint
+
 import com.kire.audio.data.mapper.asFlowListOfTracks
+import com.kire.audio.data.mapper.asMapAlbumListTrackDomain
 import com.kire.audio.data.mapper.asTrackDomain
 import com.kire.audio.data.mapper.asTrackEntity
 import com.kire.audio.data.model.TrackEntity
-
 import com.kire.audio.data.repository.functional.TracksLoading
 import com.kire.audio.data.trackDatabase.TrackDao
+
 import com.kire.audio.domain.repository.ITrackRepository
+import com.kire.audio.domain.model.TrackDomain
 
 import com.kire.audio.di.IoDispatcher
-import com.kire.audio.domain.model.TrackDomain
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 import java.io.File
+
 import javax.inject.Inject
 
 @SuppressLint("Range")
@@ -58,7 +60,8 @@ class TrackRepository @Inject constructor(
     override fun getTracksOrderedByDurationDESC(): Flow<List<TrackDomain>> =
         trackDatabaseDao.getTracksOrderedByDurationDESC().asFlowListOfTracks()
 
-/*    override suspend fun getArtistsWithTracks(): Map<String, List<Track>> = trackDatabase.dao.getArtistsWithTracks()*/
+    override suspend fun getAlbumsWithTracks(): Map<String, List<TrackDomain>> =
+        trackDatabaseDao.getAlbumsWithTracks().asMapAlbumListTrackDomain()
 
     @SuppressLint("Range")
     override suspend fun loadTracksToDatabase() {

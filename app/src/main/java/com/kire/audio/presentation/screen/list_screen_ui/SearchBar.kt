@@ -45,15 +45,14 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SearchBar(
-    searchUiState: SearchUiState,
-    changeSearchUiState: (SearchUiState) -> Unit,
     trackUiState: TrackUiState,
+    searchUiState: SearchUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
+    changeSearchUiState: (SearchUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
-    mediaController: MediaController,
+    mediaController: MediaController?,
     selectListTracks: (ListSelector) -> StateFlow<List<Track>>,
 ){
-
     val searchResult by selectListTracks(ListSelector.SEARCH_LIST).collectAsStateWithLifecycle()
 
     DockedSearchBar(
