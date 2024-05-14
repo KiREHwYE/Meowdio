@@ -26,4 +26,9 @@
         2) Проверьте, что имя автора и название трека состоит только из латинских символов, цифр и специальных знаков.\n\n
         3) Проверьте, чтобы в имени автора или названии не было ошибок.\n\n
     </string>
+    <string name="nothing_was_found">Нет треков</string>
+    <string name="edit_mode_text">Редактировать текущий текст</string>
+    <string name="by_artist_and_title_mode_text">По имени исполнителя и названию трека</string>
+    <string name="by_genius_link_mode_text">По Genius ссылке</string>
+    <string name="automatic_mode_text">Автоматически</string>
 </resources>

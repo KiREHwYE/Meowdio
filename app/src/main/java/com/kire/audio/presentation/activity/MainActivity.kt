@@ -1,5 +1,6 @@
 package com.kire.audio.presentation.activity
 
+import android.annotation.SuppressLint
 import android.app.Activity
 
 import android.content.ComponentName
@@ -18,6 +19,7 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -43,13 +45,13 @@ import com.kire.audio.device.audio.performPlayMedia
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.rememberManagedMediaController
 import com.kire.audio.presentation.navigation.NavigationUI
-import com.kire.audio.presentation.screen.cross_screen_ui.BottomBar
-import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
-import com.kire.audio.presentation.theme.AudioTheme
+import com.kire.audio.presentation.ui.cross_screen_ui.PlayerBottomBar
+import com.kire.audio.presentation.ui.cross_screen_ui.AutoSkipOnRepeatMode
+import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 import com.kire.audio.presentation.viewmodel.TrackViewModel
+import com.kire.audio.screen.functional.GetPermissions
 
 import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
-import com.ramcosta.composedestinations.navigation.navigate
 
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -66,6 +68,7 @@ class MainActivity : ComponentActivity() {
 
     private var factory: ListenableFuture<MediaController>? = null
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,30 +86,37 @@ class MainActivity : ComponentActivity() {
 
             val mediaController by rememberManagedMediaController()
 
-            AudioTheme {
+            AudioExtendedTheme {
+
                 Scaffold(
                     bottomBar = {
-                        BottomBar(
+                        PlayerBottomBar(
                             trackUiState = trackViewModel.trackUiState,
                             mediaController = mediaController,
                             selectListOfTracks = trackViewModel::selectListOfTracks,
-                            changeTrackUiState = trackViewModel::changeTrackUiState,
-                            navigateTo = {
-                                navHostController.navigate(PlayerScreenDestination)
-                            }
+                            changeTrackUiState = trackViewModel::updateTrackUiState,
+                            navHostController = navHostController
                         )
                     }
-                ) {
-                    val pdv = it
+                ) { _ ->
+
+                    GetPermissions(
+                        lifecycleOwner = LocalLifecycleOwner.current,
+                        updateTrackDataBase = trackViewModel::updateTrackDataBase
+                    )
+
+                    AutoSkipOnRepeatMode(
+                        trackUiState = trackViewModel.trackUiState,
+                        mediaController = mediaController
+                    )
 
                     NavigationUI(
                         trackViewModel = trackViewModel,
                         mediaController = mediaController,
-                        navController = navHostController,
+                        navHostController = navHostController,
                         navHostEngine = navHostEngine
                     )
                 }
-
             }
         }
 
@@ -114,7 +124,7 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 launch(Dispatchers.IO) {
                     MediaCommands.isPlayRequired.collect {
-                        trackViewModel.changeTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
+                        trackViewModel.updateTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
                     }
                 }
                 launch {
@@ -129,7 +139,12 @@ class MainActivity : ComponentActivity() {
                             skipTrack(this@MainActivity, SkipTrackAction.NEXT, trackViewModel)
                     }
                 }
-
+                launch {
+                    MediaCommands.isRepeatRequired.collect {
+                        if (it)
+                            skipTrack(this@MainActivity, SkipTrackAction.REPEAT, trackViewModel)
+                    }
+                }
             }
         }
     }
@@ -170,26 +185,31 @@ class MainActivity : ComponentActivity() {
 
 private fun skipTrack(context: Context, skipTrackAction: SkipTrackAction, viewModel: TrackViewModel){
 
-    MediaCommands.isTrackRepeated.value = false
-
     val mediaController = MediaControllerManager.getInstance(context)
 
     viewModel.apply {
+
         val newINDEX =
             skipTrackAction.action(
                 trackUiState.value.currentTrackPlayingIndex!!,
                 selectListOfTracks(trackUiState.value.currentListSelector).value.size
             )
 
-        changeTrackUiState(
-            trackUiState.value.copy(
-                currentTrackPlaying = selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX],
-                currentTrackPlayingURI = selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX].path,
-                currentTrackPlayingIndex = newINDEX
+        if (skipTrackAction == SkipTrackAction.NEXT || skipTrackAction == SkipTrackAction.PREVIOUS) {
+            updateTrackUiState(
+                trackUiState.value.copy(
+                    currentTrackPlaying = selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX],
+                    currentTrackPlayingURI = selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX].path,
+                    currentTrackPlayingIndex = newINDEX
+                )
             )
-        )
+
+            MediaCommands.isTrackRepeated.value = false
+        }
 
         mediaController.controller.value?.performPlayMedia(selectListOfTracks(trackUiState.value.currentListSelector).value[newINDEX])
+
+        MediaCommands.isRepeatRequired.value = false
     }
 
     if (skipTrackAction == SkipTrackAction.PREVIOUS)

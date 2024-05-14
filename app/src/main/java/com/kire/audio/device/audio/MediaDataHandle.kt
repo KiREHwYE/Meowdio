@@ -3,6 +3,7 @@ package com.kire.audio.device.audio
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaController
+
 import com.kire.audio.device.audio.functional.MediaCommands
 import com.kire.audio.device.audio.functional.SkipTrackAction
 import com.kire.audio.presentation.model.Track
@@ -20,6 +21,7 @@ private fun getMetaDataFromMediaClass(media: Track): MediaMetadata {
 }
 
 fun MediaController.performPlayMedia(media: Track) {
+
     val metadata = getMetaDataFromMediaClass(media)
     val mediaItem = MediaItem.Builder()
         .setUri(media.path)
@@ -28,11 +30,14 @@ fun MediaController.performPlayMedia(media: Track) {
         .build()
 
     this.apply {
-
         if (isPlaying)
             stop()
 
-        setMediaItem(mediaItem)
+        if (MediaCommands.isRepeatRequired.value)
+            seekTo(0L)
+        else
+            setMediaItem(mediaItem)
+
         prepare()
         play()
 

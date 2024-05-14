@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kire.audio.di.IoDispatcher
 import com.kire.audio.domain.use_case.ITrackUseCases
+import com.kire.audio.presentation.model.SortOption
 
-import com.kire.audio.screen.functional.ListSelector
+import com.kire.audio.presentation.util.ListSelector
 
-import com.kire.audio.presentation.functional.events.SortOptionEvent
 import com.kire.audio.presentation.mapper.asILyricsRequestState
 import com.kire.audio.presentation.util.SortType
 import com.kire.audio.presentation.mapper.asListOfTrack
@@ -17,6 +17,7 @@ import com.kire.audio.presentation.mapper.asSortType
 import com.kire.audio.presentation.mapper.asSortTypeDomain
 import com.kire.audio.presentation.mapper.asTrackDomain
 import com.kire.audio.presentation.model.ILyricsRequestState
+import com.kire.audio.presentation.model.LyricsUiState
 import com.kire.audio.presentation.model.SearchUiState
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
@@ -53,12 +54,8 @@ class TrackViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), mutableListOf())
 
 
-    fun onEvent(event: SortOptionEvent) {
-        when(event){
-            is SortOptionEvent.ListTrackSortOption -> {
-                _sortType.value = event.sortType
-            }
-        }
+    fun updateSortOption(event: SortOption) {
+        _sortType.value = event.sortType
     }
 
     private var _favouriteTracks:  StateFlow<List<Track>> =
@@ -86,7 +83,7 @@ class TrackViewModel @Inject constructor(
     private val _trackUiState: MutableStateFlow<TrackUiState> = MutableStateFlow(TrackUiState())
     val trackUiState: StateFlow<TrackUiState> = _trackUiState.asStateFlow()
 
-    fun changeTrackUiState(
+    fun updateTrackUiState(
         trackUiState: TrackUiState
     ) = _trackUiState.update { _ ->
         trackUiState
@@ -104,6 +101,20 @@ class TrackViewModel @Inject constructor(
             artist,
             userInput
         ).asILyricsRequestState()
+
+
+    /*
+    TrackUiState params and funcs
+    * */
+
+    private val _lyricsUiState: MutableStateFlow<LyricsUiState> = MutableStateFlow(LyricsUiState())
+    val lyricsUiState: StateFlow<LyricsUiState> = _lyricsUiState
+
+    fun updateLyricsUiState(
+        lyricsUiState: LyricsUiState
+    ) = _lyricsUiState.update { _ ->
+        lyricsUiState
+    }
 
     /*
      * DataStore funcs
@@ -143,7 +154,7 @@ class TrackViewModel @Inject constructor(
     private val _searchUiState = MutableStateFlow(SearchUiState())
     val searchUiState: StateFlow<SearchUiState> = _searchUiState.asStateFlow()
 
-    fun changeSearchUiState(searchUiState: SearchUiState) {
+    fun updateSearchUiState(searchUiState: SearchUiState) {
         _searchUiState.update { _ ->
             searchUiState
         }

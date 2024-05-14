@@ -28,5 +28,5 @@ interface ITrackRepository {
     suspend fun getAlbumsWithTracks(): Map<String, List<TrackDomain>>
 
     suspend fun loadTracksToDatabase()
-    suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase()
+    suspend fun deleteNoLongerExistingTracksFromDatabase()
 }

@@ -1,7 +1,7 @@
 package com.kire.audio.presentation.model
 
 import com.kire.audio.device.audio.functional.RepeatMode
-import com.kire.audio.screen.functional.ListSelector
+import com.kire.audio.presentation.util.ListSelector
 
 data class TrackUiState(
     val isPlaying: Boolean = false,

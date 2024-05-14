@@ -16,7 +16,7 @@ class UpdateTrackDataBaseUseCase @Inject constructor(
                     trackRepository.loadTracksToDatabase()
                 }
                 launch {
-                    trackRepository.deleteNoLongerExistingTracksFromDatabaseUseCase()
+                    trackRepository.deleteNoLongerExistingTracksFromDatabase()
                 }
             }
     }

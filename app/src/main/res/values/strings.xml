@@ -29,4 +29,9 @@
         2) Check that the author\'s name and track title consist only of Latin characters, numbers and special characters.\n\n
         3) Check that there are no mistakes in the author\'s name or title.\n\n
     </string>
+    <string name="nothing_was_found">No tracks</string>
+    <string name="edit_mode_text">Edit current text</string>
+    <string name="by_artist_and_title_mode_text"><![CDATA[By artist name & song title]]></string>
+    <string name="by_genius_link_mode_text">By Genius link</string>
+    <string name="automatic_mode_text">Automatically</string>
 </resources>

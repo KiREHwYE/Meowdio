@@ -2,7 +2,7 @@ package com.kire.audio.data.repository
 
 import android.annotation.SuppressLint
 
-import com.kire.audio.data.mapper.asFlowListOfTracks
+import com.kire.audio.data.mapper.asFlowListOfTracksDomain
 import com.kire.audio.data.mapper.asMapAlbumListTrackDomain
 import com.kire.audio.data.mapper.asTrackDomain
 import com.kire.audio.data.mapper.asTrackEntity
@@ -31,10 +31,12 @@ class TrackRepository @Inject constructor(
     @IoDispatcher private val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO
 ): ITrackRepository {
 
-    override suspend fun getTrack(id: String): TrackEntity  =
-        trackDatabaseDao.getTrack(id)
-    override suspend fun upsertTrack(track: TrackDomain) =
-        trackDatabaseDao.upsertTrack(track.asTrackEntity())
+    override suspend fun getTrack(id: String): TrackEntity {
+       return trackDatabaseDao.getTrack(id)
+    }
+    override suspend fun upsertTrack(track: TrackDomain) {
+        return trackDatabaseDao.upsertTrack(track.asTrackEntity())
+    }
     override suspend fun deleteTrack(track: TrackEntity) =
         trackDatabaseDao.deleteTrack(track)
 
@@ -42,23 +44,23 @@ class TrackRepository @Inject constructor(
         trackDatabaseDao.updateIsLoved(track.asTrackEntity())
 
     override fun getFavouriteTracks(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getFavouriteTracks().asFlowListOfTracks()
+        trackDatabaseDao.getFavouriteTracks().asFlowListOfTracksDomain()
     override fun getTracksOrderedByDateAddedASC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByDateAddedASC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByDateAddedASC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByDateAddedDESC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByDateAddedDESC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByDateAddedDESC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByTitleASC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByTitleASC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByTitleASC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByTitleDESC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByTitleDESC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByTitleDESC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByArtistASC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByArtistASC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByArtistASC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByArtistDESC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByArtistDESC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByArtistDESC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByDurationASC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByDurationASC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByDurationASC().asFlowListOfTracksDomain()
     override fun getTracksOrderedByDurationDESC(): Flow<List<TrackDomain>> =
-        trackDatabaseDao.getTracksOrderedByDurationDESC().asFlowListOfTracks()
+        trackDatabaseDao.getTracksOrderedByDurationDESC().asFlowListOfTracksDomain()
 
     override suspend fun getAlbumsWithTracks(): Map<String, List<TrackDomain>> =
         trackDatabaseDao.getAlbumsWithTracks().asMapAlbumListTrackDomain()
@@ -67,30 +69,19 @@ class TrackRepository @Inject constructor(
     override suspend fun loadTracksToDatabase() {
 
         withContext(coroutineDispatcher) {
-
-            tracksLoading.getTracksFromLocal()
-                .also {
-                    tracksLoading.tracksFromLocal.collect { track ->
-
-                        track?.let {
-                            val existingTrack: TrackEntity = getTrack(track.id)
-
-                            if (existingTrack != null && existingTrack.path == track.path)
-                                return@collect
-
-                            upsertTrack(track.asTrackDomain())
-                        }
-                    }
-                }
+            tracksLoading.getTracksFromLocalStorage(getTrack = ::getTrack, upsertTrack = ::upsertTrack)
         }
     }
 
-    override suspend fun deleteNoLongerExistingTracksFromDatabaseUseCase(){
+    override suspend fun deleteNoLongerExistingTracksFromDatabase() {
 
-        getTracksOrderedByDateAddedASC().collect { tracks ->
-            tracks.forEach { track ->
-                if (!File(track.path).exists())
-                    deleteTrack(track.asTrackEntity())
+        withContext(coroutineDispatcher) {
+
+            getTracksOrderedByDateAddedASC().collect { tracks ->
+                tracks.forEach { track ->
+                    if (!File(track.path).exists())
+                        deleteTrack(track.asTrackEntity())
+                }
             }
         }
     }

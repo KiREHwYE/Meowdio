@@ -7,7 +7,7 @@ data class Track(
     val album: String?,
     val artist: String,
     val duration: Long = 0,
-    val lyrics: String = "",
+    val lyrics: ILyricsRequestState = ILyricsRequestState.OnRequest,
     val path: String,
     val albumId: Long?,
     val imageUri: Uri?,

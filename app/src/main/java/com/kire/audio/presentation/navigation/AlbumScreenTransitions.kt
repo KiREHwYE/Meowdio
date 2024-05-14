@@ -8,8 +8,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.navigation.NavBackStackEntry
-import com.kire.audio.presentation.screen.appDestination
-import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
+import com.kire.audio.presentation.ui.screen.appDestination
+import com.kire.audio.presentation.ui.screen.destinations.PlayerScreenDestination
 import com.ramcosta.composedestinations.spec.DestinationStyle
 
 object AlbumScreenTransitions : DestinationStyle.Animated {

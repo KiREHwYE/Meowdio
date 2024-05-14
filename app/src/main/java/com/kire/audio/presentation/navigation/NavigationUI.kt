@@ -6,13 +6,13 @@ import androidx.media3.session.MediaController
 
 import androidx.navigation.NavHostController
 
-import com.kire.audio.presentation.screen.AlbumScreen
-import com.kire.audio.presentation.screen.ListScreen
-import com.kire.audio.presentation.screen.NavGraphs
-import com.kire.audio.presentation.screen.PlayerScreen
-import com.kire.audio.presentation.screen.destinations.AlbumScreenDestination
-import com.kire.audio.presentation.screen.destinations.ListScreenDestination
-import com.kire.audio.presentation.screen.destinations.PlayerScreenDestination
+import com.kire.audio.presentation.ui.screen.AlbumScreen
+import com.kire.audio.presentation.ui.screen.ListScreen
+import com.kire.audio.presentation.ui.screen.PlayerScreen
+import com.kire.audio.presentation.ui.screen.NavGraphs
+import com.kire.audio.presentation.ui.screen.destinations.AlbumScreenDestination
+import com.kire.audio.presentation.ui.screen.destinations.ListScreenDestination
+import com.kire.audio.presentation.ui.screen.destinations.PlayerScreenDestination
 
 import com.kire.audio.presentation.viewmodel.TrackViewModel
 
@@ -24,24 +24,24 @@ import com.ramcosta.composedestinations.spec.NavHostEngine
 fun NavigationUI(
     trackViewModel: TrackViewModel,
     mediaController: MediaController?,
-    navController: NavHostController,
+    navHostController: NavHostController,
     navHostEngine: NavHostEngine
 ){
 
-    DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine, navController = navController) {
+    DestinationsNavHost(navGraph = NavGraphs.root, engine = navHostEngine, navController = navHostController) {
         composable(ListScreenDestination) {
             ListScreen(
-                viewModel = trackViewModel,
+                trackViewModel = trackViewModel,
                 navigator = destinationsNavigator,
                 mediaController = mediaController
             )
         }
         composable(PlayerScreenDestination) {
             PlayerScreen(
-                viewModel = trackViewModel,
+                trackViewModel = trackViewModel,
                 navigateBack = {
-                    destinationsNavigator.popBackStack(route = PlayerScreenDestination.route, inclusive = true)
-                    trackViewModel.changeTrackUiState(trackViewModel.trackUiState.value.copy(isPlayerBottomCardShown = true))
+                    destinationsNavigator.popBackStack(route = PlayerScreenDestination, inclusive = true)
+                    trackViewModel.updateTrackUiState(trackViewModel.trackUiState.value.copy(isPlayerBottomCardShown = true))
                 },
                 mediaController = mediaController
             )

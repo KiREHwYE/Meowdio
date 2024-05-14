@@ -47,7 +47,7 @@ class GetTrackLyricsFromGenius @Inject constructor() {
 
             return ILyricsRequestStateDomain.Success(text)
 
-        } catch (e: IOException) {
+        } catch (e: Exception) {
 
             return ILyricsRequestStateDomain.Unsuccess
         }

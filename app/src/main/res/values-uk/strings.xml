@@ -26,4 +26,10 @@
         2) Перевірте, щоби ім\'я виконавця та треку містили тільки латинські символи, цифри та особливі символи .\n\n
         3) Перевірте, щоби ім\'я виконавця та назва треку не містили помилок.\n\n
     </string>
+    <string name="nothing_was_found">Немає треків</string>
+    <string name="edit_mode_text">Редагувати поточний текст</string>
+    <string name="by_artist_and_title_mode_text">За іменем виконавця та назвою треку</string>
+    <string name="by_genius_link_mode_text">За Genius посиланням</string>
+    <string name="automatic_mode_text">Автоматично</string>
+
 </resources>
