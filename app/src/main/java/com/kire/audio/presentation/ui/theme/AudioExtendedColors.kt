@@ -13,5 +13,7 @@ data class AudioExtendedColors(
     val button: Color = Color.Unspecified,
     val playerScreenButton: Color = Color.Unspecified,
     val scrollToTopButton: Color = Color.Unspecified,
+    val lyricsText: Color = Color.Unspecified,
+    val shadow: Color = Color.Unspecified,
     val orangeAccents: Color = Color.Unspecified,
 )

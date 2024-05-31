@@ -14,6 +14,7 @@ import android.view.WindowManager
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.material3.Scaffold
@@ -39,11 +40,11 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 
 import com.kire.audio.device.audio.AudioPlayerService
-import com.kire.audio.device.audio.MediaControllerManager
-import com.kire.audio.device.audio.functional.SkipTrackAction
-import com.kire.audio.device.audio.performPlayMedia
-import com.kire.audio.device.audio.functional.MediaCommands
-import com.kire.audio.device.audio.rememberManagedMediaController
+import com.kire.audio.device.audio.media_controller.MediaControllerManager
+import com.kire.audio.device.audio.util.SkipTrackAction
+import com.kire.audio.device.audio.media_controller.performPlayMedia
+import com.kire.audio.device.audio.util.MediaCommands
+import com.kire.audio.device.audio.media_controller.rememberManagedMediaController
 import com.kire.audio.presentation.navigation.NavigationUI
 import com.kire.audio.presentation.ui.cross_screen_ui.PlayerBottomBar
 import com.kire.audio.presentation.ui.cross_screen_ui.AutoSkipOnRepeatMode
@@ -57,14 +58,15 @@ import dagger.hilt.android.AndroidEntryPoint
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-import javax.inject.Inject
+import kotlinx.coroutines.withContext
 
 @UnstableApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var trackViewModel: TrackViewModel
+//    @Inject lateinit var trackViewModel: TrackViewModel
+
+    val trackViewModel: TrackViewModel by viewModels()
 
     private var factory: ListenableFuture<MediaController>? = null
 
@@ -121,28 +123,31 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                launch(Dispatchers.IO) {
-                    MediaCommands.isPlayRequired.collect {
-                        trackViewModel.updateTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                withContext(Dispatchers.IO){
+
+//                    launch {
+//                        MediaCommands.isPlayRequired.collect {
+//                            trackViewModel.updateTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
+//                        }
+//                    }
+                    launch {
+                        MediaCommands.isPreviousTrackRequired.collect {
+                            if (it)
+                                skipTrack(this@MainActivity, SkipTrackAction.PREVIOUS, trackViewModel)
+                        }
                     }
-                }
-                launch {
-                    MediaCommands.isPreviousTrackRequired.collect {
-                        if (it)
-                            skipTrack(this@MainActivity, SkipTrackAction.PREVIOUS, trackViewModel)
+                    launch {
+                        MediaCommands.isNextTrackRequired.collect {
+                            if (it)
+                                skipTrack(this@MainActivity, SkipTrackAction.NEXT, trackViewModel)
+                        }
                     }
-                }
-                launch {
-                    MediaCommands.isNextTrackRequired.collect {
-                        if (it)
-                            skipTrack(this@MainActivity, SkipTrackAction.NEXT, trackViewModel)
-                    }
-                }
-                launch {
-                    MediaCommands.isRepeatRequired.collect {
-                        if (it)
-                            skipTrack(this@MainActivity, SkipTrackAction.REPEAT, trackViewModel)
+                    launch {
+                        MediaCommands.isRepeatRequired.collect {
+                            if (it)
+                                skipTrack(this@MainActivity, SkipTrackAction.REPEAT, trackViewModel)
+                        }
                     }
                 }
             }

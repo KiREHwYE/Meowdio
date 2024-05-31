@@ -1,6 +1,6 @@
 package com.kire.audio.domain.use_case
 
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.RepeatMode
 import com.kire.audio.domain.repository.IPreferencesRepository
 import com.kire.audio.domain.util.PreferencesDataStoreConstants
 import javax.inject.Inject

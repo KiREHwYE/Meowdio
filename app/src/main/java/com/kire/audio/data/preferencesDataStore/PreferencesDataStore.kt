@@ -5,7 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.kire.audio.data.util.SortTypeDataStore
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.RepeatMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject

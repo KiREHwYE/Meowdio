@@ -26,7 +26,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.kire.audio.R
-import com.kire.audio.device.audio.functional.MediaCommands
+import com.kire.audio.device.audio.util.MediaCommands
 import com.kire.audio.device.notification.CustomMediaNotificationProvider
 import com.kire.audio.device.notification.NotificationPlayerCustomCommandButton
 import com.kire.audio.presentation.activity.MainActivity

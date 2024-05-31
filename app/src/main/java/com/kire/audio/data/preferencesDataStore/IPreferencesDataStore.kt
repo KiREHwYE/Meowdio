@@ -1,7 +1,7 @@
 package com.kire.audio.data.preferencesDataStore
 
 import com.kire.audio.data.util.SortTypeDataStore
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.RepeatMode
 import kotlinx.coroutines.flow.Flow
 
 interface IPreferencesDataStore {

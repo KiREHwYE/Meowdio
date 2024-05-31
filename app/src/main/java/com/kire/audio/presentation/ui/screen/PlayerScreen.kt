@@ -1,7 +1,5 @@
 package com.kire.audio.presentation.ui.screen
 
-import androidx.activity.compose.BackHandler
-
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,14 +22,18 @@ import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-import androidx.media3.session.MediaController
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.res.dimensionResource
 
-import com.kire.audio.device.audio.skipTrack
-import com.kire.audio.presentation.navigation.PlayerScreenTransitions
+import androidx.media3.session.MediaController
+import com.kire.audio.R
+
+import com.kire.audio.device.audio.media_controller.skipTrack
+import com.kire.audio.presentation.navigation.transitions.PlayerScreenTransitions
 import com.kire.audio.presentation.ui.player_screen_ui.Background
-import com.kire.audio.presentation.ui.player_screen_ui.FunctionalBlock
+import com.kire.audio.presentation.ui.player_screen_ui.functional_block.FunctionalBlock
 import com.kire.audio.presentation.ui.player_screen_ui.Header
-import com.kire.audio.presentation.ui.player_screen_ui.ImageLyricsFlipBlock
+import com.kire.audio.presentation.ui.player_screen_ui.image_lyrics_flip_block.ImageLyricsFlipBlock
 import com.kire.audio.presentation.ui.player_screen_ui.TextAndHeart
 import com.kire.audio.presentation.viewmodel.TrackViewModel
 import com.kire.audio.presentation.util.ListSelector
@@ -43,17 +45,15 @@ import com.ramcosta.composedestinations.annotation.Destination
 fun PlayerScreen(
     trackViewModel: TrackViewModel,
     mediaController: MediaController?,
-    navigateBack: () -> Unit,
-    paddingValues: PaddingValues = PaddingValues(start = 28.dp, end = 28.dp)
+    navigateBack: () -> Unit
 ){
 
     val trackUiState by trackViewModel.trackUiState.collectAsStateWithLifecycle()
 
-    var currentTrackList = trackViewModel.selectListOfTracks(trackUiState.currentListSelector).collectAsStateWithLifecycle().value
+    val currentTrackList = trackViewModel.selectListOfTracks(trackUiState.currentListSelector).collectAsStateWithLifecycle().value
 
     if (currentTrackList.isEmpty() && (trackUiState.currentListSelector != ListSelector.MAIN_LIST)) {
         trackViewModel.updateTrackUiState(trackUiState.copy(currentListSelector = ListSelector.MAIN_LIST))
-        currentTrackList = trackViewModel.selectListOfTracks(ListSelector.MAIN_LIST).collectAsStateWithLifecycle().value
     }
 
     var duration: Float by remember { mutableFloatStateOf(0f) }
@@ -70,7 +70,7 @@ fun PlayerScreen(
     Background(imageUri = trackUiState.currentTrackPlaying?.imageUri)
 
     Column(modifier = Modifier
-        .padding(paddingValues)
+        .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad))
         .fillMaxSize()
         .pointerInput(Unit) {
             detectVerticalDragGestures { _, dragAmount ->
@@ -92,7 +92,7 @@ fun PlayerScreen(
         )
 
         ImageLyricsFlipBlock(
-            trackUiState = trackUiState,
+            trackUiState = trackViewModel.trackUiState,
             lyricsUiState = trackViewModel.lyricsUiState,
             updateLyricsUiState = trackViewModel::updateLyricsUiState,
             updateTrackUiState = trackViewModel::updateTrackUiState,
@@ -109,22 +109,22 @@ fun PlayerScreen(
         ) {
 
             TextAndHeart(
-                trackUiState = trackUiState,
+                trackUiState = trackViewModel.trackUiState,
                 changeTrackUiState = trackViewModel::updateTrackUiState,
                 upsertTrack = trackViewModel::upsertTrack
             )
 
             FunctionalBlock(
-                trackUiState = trackUiState,
+                trackUiState = trackViewModel.trackUiState,
                 changeTrackUiState = trackViewModel::updateTrackUiState,
                 upsertTrack = trackViewModel::upsertTrack,
                 saveRepeatMode = trackViewModel::saveRepeatMode,
                 skipTrack = { skipTrackAction ->
                     mediaController?.skipTrack(
                         skipTrackAction = skipTrackAction,
-                        currentTrackList = currentTrackList,
+                        currentTrackList = trackViewModel.selectListOfTracks(trackUiState.currentListSelector).value,
                         trackUiState = trackUiState,
-                        changeTrackUiState = trackViewModel::updateTrackUiState
+                        updateTrackUiState = trackViewModel::updateTrackUiState
                     )
                 },
                 mediaController = mediaController,

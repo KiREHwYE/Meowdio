@@ -4,10 +4,9 @@ import android.annotation.SuppressLint
 
 import com.kire.audio.data.mapper.asFlowListOfTracksDomain
 import com.kire.audio.data.mapper.asMapAlbumListTrackDomain
-import com.kire.audio.data.mapper.asTrackDomain
 import com.kire.audio.data.mapper.asTrackEntity
 import com.kire.audio.data.model.TrackEntity
-import com.kire.audio.data.repository.functional.TracksLoading
+import com.kire.audio.data.repository.util.TracksLoading
 import com.kire.audio.data.trackDatabase.TrackDao
 
 import com.kire.audio.domain.repository.ITrackRepository

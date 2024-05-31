@@ -6,6 +6,6 @@ import com.kire.audio.presentation.model.ILyricsRequestState
 fun ILyricsRequestStateDomain.asILyricsRequestState() =
     when(this) {
         is ILyricsRequestStateDomain.Success -> ILyricsRequestState.Success(this.lyrics)
-        is ILyricsRequestStateDomain.Unsuccess -> ILyricsRequestState.Unsuccessful
+        is ILyricsRequestStateDomain.Unsuccessful -> ILyricsRequestState.Unsuccessful(this.message)
         is ILyricsRequestStateDomain.onRequest -> ILyricsRequestState.OnRequest
     }

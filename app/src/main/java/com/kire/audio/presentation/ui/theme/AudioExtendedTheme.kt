@@ -18,6 +18,8 @@ val extendedLightColors = AudioExtendedColors(
     button = Color.Black,
     playerScreenButton = Color.White,
     scrollToTopButton = Color.White,
+    lyricsText = Color.DarkGray,
+    shadow = Color.DarkGray,
     orangeAccents = Color(0xFFFEBAA1)
 )
 
@@ -30,6 +32,7 @@ val extendedDarkColors = AudioExtendedColors(
     button = Color(0xFFD0D0D0),
     playerScreenButton = Color.White,
     scrollToTopButton = Color.Black,
+    lyricsText = Color.LightGray,
     orangeAccents = Color(0xFFFEBAA1)
 
 )

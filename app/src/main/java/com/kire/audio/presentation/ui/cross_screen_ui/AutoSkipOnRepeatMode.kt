@@ -11,8 +11,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.media3.session.MediaController
 
-import com.kire.audio.device.audio.functional.MediaCommands
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.MediaCommands
+import com.kire.audio.device.audio.util.RepeatMode
 import com.kire.audio.presentation.model.TrackUiState
 
 import kotlinx.coroutines.delay

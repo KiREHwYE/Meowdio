@@ -34,4 +34,5 @@
     <string name="by_artist_and_title_mode_text"><![CDATA[By artist name & song title]]></string>
     <string name="by_genius_link_mode_text">By Genius link</string>
     <string name="automatic_mode_text">Automatically</string>
+    <string name="albumscreen_header">Albums</string>
 </resources>

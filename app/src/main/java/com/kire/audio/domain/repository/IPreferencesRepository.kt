@@ -1,6 +1,6 @@
 package com.kire.audio.domain.repository
 
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.RepeatMode
 import com.kire.audio.domain.util.SortTypeDomain
 import kotlinx.coroutines.flow.Flow
 

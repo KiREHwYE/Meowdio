@@ -38,19 +38,20 @@ import kotlinx.coroutines.launch
 
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.dimensionResource
 
 import androidx.media3.session.MediaController
+import com.kire.audio.R
 
-import com.kire.audio.device.audio.functional.PlayerState
-import com.kire.audio.device.audio.functional.state
-import com.kire.audio.presentation.navigation.ListScreenTransitions
+import com.kire.audio.device.audio.util.PlayerState
+import com.kire.audio.device.audio.util.state
+import com.kire.audio.presentation.navigation.transitions.ListScreenTransitions
 import com.kire.audio.presentation.util.ListSelector
 import com.kire.audio.presentation.ui.cross_screen_ui.OnScrollListener
 import com.kire.audio.presentation.ui.cross_screen_ui.ScrollToTopButton
-import com.kire.audio.presentation.ui.list_screen_ui.TopBlock
+import com.kire.audio.presentation.ui.list_screen_ui.top_block.TopBlock
 import com.kire.audio.presentation.ui.list_screen_ui.TrackItem
-import com.kire.audio.presentation.ui.screen.destinations.AlbumScreenDestination
+import com.kire.audio.presentation.ui.screen.destinations.ListAlbumScreenDestination
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 
 import com.ramcosta.composedestinations.annotation.Destination
@@ -63,8 +64,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 fun ListScreen(
     trackViewModel: TrackViewModel,
     navigator: DestinationsNavigator,
-    mediaController: MediaController?,
-    horizontalPaddingValues: PaddingValues = PaddingValues(start = 28.dp, end = 28.dp)
+    mediaController: MediaController?
 ) {
 
     var playerState: PlayerState? by remember {
@@ -80,17 +80,17 @@ fun ListScreen(
         }
     }
 
-    val listState = rememberLazyListState()
-
     val coroutineScope = rememberCoroutineScope()
 
     val trackUiState by trackViewModel.trackUiState.collectAsStateWithLifecycle()
 
     val tracks by trackViewModel.selectListOfTracks(ListSelector.MAIN_LIST).collectAsStateWithLifecycle()
 
+    val listState = rememberLazyListState()
+
     val showButton by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex > 0
+            listState.firstVisibleItemIndex > 2 && trackUiState.isPlayerBottomCardShown
         }
     }
 
@@ -100,16 +100,13 @@ fun ListScreen(
         changeTrackUiState = trackViewModel::updateTrackUiState
     )
 
-
     LazyColumn(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(color = AudioExtendedTheme.extendedColors.background)
-            .padding(horizontalPaddingValues),
-        contentPadding = PaddingValues(
-            bottom = 28.dp
-        ),
+            .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad)),
+        contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.list_bottom_pad)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -119,11 +116,9 @@ fun ListScreen(
             TopBlock(
                 trackViewModel = trackViewModel,
                 onTitleClick = {
-                    navigator.navigate(AlbumScreenDestination)
+                    navigator.navigate(ListAlbumScreenDestination)
                 },
-                mediaController = mediaController,
-                modifier = Modifier
-                    .zIndex(1f)
+                mediaController = mediaController
             )
         }
 
@@ -137,7 +132,7 @@ fun ListScreen(
             TrackItem(
                 trackToShow = track,
                 trackUiState = trackUiState,
-                changeTrackUiState = trackViewModel::updateTrackUiState,
+                updateTrackUiState = trackViewModel::updateTrackUiState,
                 upsertTrack = trackViewModel::upsertTrack,
                 selector = ListSelector.MAIN_LIST,
                 mediaController = mediaController,
@@ -151,32 +146,17 @@ fun ListScreen(
     val itemSizePx = with(density) { itemSize.toPx() }
     val itemsScrollCount = tracks.size
 
-    AnimatedVisibility(
-        visible = showButton,
-        enter = slideInHorizontally(initialOffsetX = { 82 }) + fadeIn(
-            animationSpec = tween(
-                durationMillis = 250,
-                easing = FastOutSlowInEasing
-            )
-        ),
-        exit = slideOutHorizontally(targetOffsetX = { 82 }) + fadeOut(
-            animationSpec = tween(
-                durationMillis = 200
-            )
-        ),
-    ) {
-
-        ScrollToTopButton(
-            onClick = {
-                coroutineScope.launch {
-                    listState.animateScrollBy(
-                        value = -1 * itemSizePx * itemsScrollCount,
-                        animationSpec = tween(durationMillis = 3000)
-                    )
-                }
+    ScrollToTopButton(
+        showButton = showButton,
+        onClick = {
+            coroutineScope.launch {
+                listState.animateScrollBy(
+                    value = -1 * itemSizePx * itemsScrollCount,
+                    animationSpec = tween(durationMillis = 3000)
+                )
             }
-        )
-    }
+        }
+    )
 }
 
 

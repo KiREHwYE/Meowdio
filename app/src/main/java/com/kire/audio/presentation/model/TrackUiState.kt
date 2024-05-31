@@ -1,6 +1,6 @@
 package com.kire.audio.presentation.model
 
-import com.kire.audio.device.audio.functional.RepeatMode
+import com.kire.audio.device.audio.util.RepeatMode
 import com.kire.audio.presentation.util.ListSelector
 
 data class TrackUiState(

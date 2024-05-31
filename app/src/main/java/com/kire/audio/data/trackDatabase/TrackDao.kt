@@ -43,6 +43,5 @@ interface TrackDao {
 
     @Query("SELECT * FROM track")
     fun getAlbumsWithTracks():
-            Map<@MapColumn(columnName = "album") String,
-                    List<TrackEntity>>
+            Map<@MapColumn(columnName = "album") String, List<TrackEntity>>
 }

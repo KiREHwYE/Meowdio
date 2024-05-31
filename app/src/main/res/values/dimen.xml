@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="app_horizontal_pad">28dp</dimen>
+    <dimen name="app_rounded_corner">24dp</dimen>
+    <dimen name="list_bottom_pad">28dp</dimen>
+</resources>

@@ -9,5 +9,5 @@ class ReadRepeatModeUseCase @Inject constructor(
 ) {
 
     operator fun invoke() =
-        preferencesDataStoreRepository.readRepeatMode(PreferencesDataStoreConstants.REPEAT_MODE_KEY)
+        preferencesDataStoreRepository.readRepeatMode(PreferencesDataStoreConstants.REPEAT_MODE_KEY.toString())
 }

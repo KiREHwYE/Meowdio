@@ -9,7 +9,6 @@ import androidx.room.PrimaryKey
 data class TrackEntity(
     val title: String,
     val album: String?,
-    @ColumnInfo(name = "artist")
     val artist: String,
     val duration: Long = 0,
     val lyrics: String = "",

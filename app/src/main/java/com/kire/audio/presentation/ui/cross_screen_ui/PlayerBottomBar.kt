@@ -12,7 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.session.MediaController
 import androidx.navigation.NavHostController
-import com.kire.audio.device.audio.skipTrack
+import com.kire.audio.device.audio.media_controller.skipTrack
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.ui.list_screen_ui.PlayerBottomFloatingCard
@@ -30,12 +30,12 @@ fun PlayerBottomBar(
     navHostController: NavHostController,
 ) {
 
-    val trackUiState by trackUiState.collectAsStateWithLifecycle()
+    val _trackUiState by trackUiState.collectAsStateWithLifecycle()
 
-    val currentTrackList by selectListOfTracks(trackUiState.currentListSelector).collectAsStateWithLifecycle()
+    val currentTrackList by selectListOfTracks(_trackUiState.currentListSelector).collectAsStateWithLifecycle()
 
     AnimatedVisibility(
-        visible = trackUiState.isPlayerBottomCardShown &&
+        visible = _trackUiState.isPlayerBottomCardShown &&
                 navHostController.currentDestination?.route != PlayerScreenDestination.route,
         enter = slideInVertically(
             initialOffsetY = { 120 },
@@ -53,25 +53,25 @@ fun PlayerBottomBar(
                 mediaController?.skipTrack(
                     skipTrackAction = skipTrackAction,
                     currentTrackList = currentTrackList,
-                    trackUiState = trackUiState,
-                    changeTrackUiState = changeTrackUiState
+                    trackUiState = _trackUiState,
+                    updateTrackUiState = changeTrackUiState
                 )
             },
             playOrPause = {
-                if (!trackUiState.isPlaying) {
+                if (!_trackUiState.isPlaying) {
                     mediaController?.play()
-                    changeTrackUiState(trackUiState.copy(isPlaying = true))
+                    changeTrackUiState(_trackUiState.copy(isPlaying = true))
                 } else {
                     mediaController?.pause()
-                    changeTrackUiState(trackUiState.copy(isPlaying = false))
+                    changeTrackUiState(_trackUiState.copy(isPlaying = false))
                 }
             },
             onTap = {
                 navHostController.navigate(PlayerScreenDestination)
-                changeTrackUiState(trackUiState.copy(isPlayerBottomCardShown = false))
+                changeTrackUiState(_trackUiState.copy(isPlayerBottomCardShown = false))
             },
             onDragDown = {
-                changeTrackUiState(trackUiState.copy(isPlayerBottomCardShown = false))
+                changeTrackUiState(_trackUiState.copy(isPlayerBottomCardShown = false))
             }
         )
     }

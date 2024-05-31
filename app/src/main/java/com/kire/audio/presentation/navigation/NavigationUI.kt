@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.media3.session.MediaController
 
 import androidx.navigation.NavHostController
-
 import com.kire.audio.presentation.ui.screen.AlbumScreen
+
+import com.kire.audio.presentation.ui.screen.ListAlbumScreen
 import com.kire.audio.presentation.ui.screen.ListScreen
 import com.kire.audio.presentation.ui.screen.PlayerScreen
 import com.kire.audio.presentation.ui.screen.NavGraphs
 import com.kire.audio.presentation.ui.screen.destinations.AlbumScreenDestination
+import com.kire.audio.presentation.ui.screen.destinations.ListAlbumScreenDestination
 import com.kire.audio.presentation.ui.screen.destinations.ListScreenDestination
 import com.kire.audio.presentation.ui.screen.destinations.PlayerScreenDestination
 
@@ -44,6 +46,13 @@ fun NavigationUI(
                     trackViewModel.updateTrackUiState(trackViewModel.trackUiState.value.copy(isPlayerBottomCardShown = true))
                 },
                 mediaController = mediaController
+            )
+        }
+        composable(ListAlbumScreenDestination) {
+            ListAlbumScreen(
+                trackViewModel = trackViewModel,
+                mediaController = mediaController,
+                navigator = destinationsNavigator
             )
         }
         composable(AlbumScreenDestination) {

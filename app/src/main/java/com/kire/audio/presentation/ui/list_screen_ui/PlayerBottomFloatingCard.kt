@@ -8,6 +8,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 
 import androidx.compose.ui.Alignment
@@ -32,27 +34,31 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import coil.compose.AsyncImage
 
 import com.kire.audio.R
-import com.kire.audio.device.audio.functional.MediaCommands
-import com.kire.audio.device.audio.functional.SkipTrackAction
-import com.kire.audio.presentation.functional.bounceClick
+import com.kire.audio.device.audio.util.MediaCommands
+import com.kire.audio.device.audio.util.SkipTrackAction
+import com.kire.audio.presentation.util.bounceClick
 import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
+import com.kire.audio.presentation.util.nonScaledSp
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerBottomFloatingCard(
-    trackUiState: TrackUiState,
+    trackUiState: StateFlow<TrackUiState>,
     skipTrack: (SkipTrackAction) -> Unit,
     playOrPause: () -> Unit,
     onTap: () -> Unit = { },
@@ -61,6 +67,8 @@ fun PlayerBottomFloatingCard(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
+    val trackUiState by trackUiState.collectAsStateWithLifecycle()
+
     Row(
         modifier = Modifier
             .padding(playerBottomFloatingCardPaddingValues)
@@ -68,10 +76,10 @@ fun PlayerBottomFloatingCard(
             .wrapContentHeight()
             .shadow(
                 elevation = 5.dp,
-                spotColor = Color.Black,
-                shape = RoundedCornerShape(24.dp)
+                spotColor = AudioExtendedTheme.extendedColors.shadow,
+                shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))
             )
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner)))
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
                     val y = dragAmount
@@ -117,36 +125,41 @@ fun PlayerBottomFloatingCard(
             )
         }
 
-        Column(
+        Box(
             modifier = Modifier
                 .wrapContentHeight()
                 .weight(1f),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.Start
-        ) {
+            contentAlignment = Alignment.CenterStart
+        ){
+            Column(
+                modifier = Modifier
+                    .wrapContentSize(),
+                verticalArrangement = Arrangement.spacedBy(-2.dp)
+            ) {
 
-            Text(
-                text = trackUiState.currentTrackPlaying?.title ?: "",
-                color = AudioExtendedTheme.extendedColors.primaryText,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .basicMarquee(
-                        animationMode = MarqueeAnimationMode.Immediately,
-                        delayMillis = 0
-                    )
-            )
-            Text(
-                text = trackUiState.currentTrackPlaying?.artist ?: "",
-                color = AudioExtendedTheme.extendedColors.secondaryText,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.W300,
-                modifier = Modifier
-                    .basicMarquee(
-                        animationMode = MarqueeAnimationMode.Immediately,
-                        delayMillis = 0
-                    )
-            )
+                Text(
+                    text = trackUiState.currentTrackPlaying?.title ?: "",
+                    color = AudioExtendedTheme.extendedColors.primaryText,
+                    fontSize = 16.sp.nonScaledSp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .basicMarquee(
+                            animationMode = MarqueeAnimationMode.Immediately,
+                            delayMillis = 0
+                        )
+                )
+                Text(
+                    text = trackUiState.currentTrackPlaying?.artist ?: "",
+                    color = AudioExtendedTheme.extendedColors.secondaryText,
+                    fontSize = 12.sp.nonScaledSp,
+                    fontWeight = FontWeight.W300,
+                    modifier = Modifier
+                        .basicMarquee(
+                            animationMode = MarqueeAnimationMode.Immediately,
+                            delayMillis = 0
+                        )
+                )
+            }
         }
 
         Row(

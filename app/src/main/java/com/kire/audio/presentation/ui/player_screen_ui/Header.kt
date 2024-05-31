@@ -23,9 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 
-import com.kire.audio.presentation.functional.bounceClick
+import com.kire.audio.presentation.util.bounceClick
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
+import com.kire.audio.presentation.ui.player_screen_ui.dialog_block.DialogInfo
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 
 @Composable
