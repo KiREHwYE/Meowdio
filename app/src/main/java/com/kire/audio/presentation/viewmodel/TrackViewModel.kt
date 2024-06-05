@@ -75,7 +75,14 @@ class TrackViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    var artistWithTracks: Map<String, List<Track>> = emptyMap()
+    private val _artistWithTracks: MutableStateFlow<Map<String, List<Track>>> = MutableStateFlow(emptyMap())
+    val artistWithTracks: StateFlow<Map<String, List<Track>>> = _artistWithTracks.asStateFlow()
+
+    fun updateArtistWithTracks() =
+        viewModelScope.launch(coroutineDispatcher) {
+            _artistWithTracks.value = trackUseCases.getAlbumsWithTracksUseCase().asMapAlbumListTrack()
+            updateAlbumUiState(_albumUiState.value.copy(tracks = _artistWithTracks.value[_albumUiState.value.albumTitle] ?: emptyList()))
+        }
 
     fun selectListOfTracks(selectList: ListSelector): StateFlow<List<Track>> =
         when(selectList){
@@ -95,7 +102,6 @@ class TrackViewModel @Inject constructor(
     fun updateTrackUiState(
         trackUiState: TrackUiState
     ) = _trackUiState.update { _ ->
-        Log.d("MINE", "TRACK UPDATED")
         trackUiState
     }
 
@@ -221,11 +227,6 @@ class TrackViewModel @Inject constructor(
                                 trackRepeatMode = it
                             )
                         }
-                    }
-                }
-                launch {
-                    viewModelScope.launch(coroutineDispatcher) {
-                        artistWithTracks = trackUseCases.getAlbumsWithTracksUseCase().asMapAlbumListTrack()
                     }
                 }
             }

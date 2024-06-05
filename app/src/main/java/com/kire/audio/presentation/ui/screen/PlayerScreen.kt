@@ -3,7 +3,6 @@ package com.kire.audio.presentation.ui.screen
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -70,7 +68,7 @@ fun PlayerScreen(
     Background(imageUri = trackUiState.currentTrackPlaying?.imageUri)
 
     Column(modifier = Modifier
-        .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad))
+        .padding(horizontal = dimensionResource(id = R.dimen.app_universal_pad))
         .fillMaxSize()
         .pointerInput(Unit) {
             detectVerticalDragGestures { _, dragAmount ->
@@ -92,7 +90,7 @@ fun PlayerScreen(
         )
 
         ImageLyricsFlipBlock(
-            trackUiState = trackViewModel.trackUiState,
+            trackUiState = trackUiState,
             lyricsUiState = trackViewModel.lyricsUiState,
             updateLyricsUiState = trackViewModel::updateLyricsUiState,
             updateTrackUiState = trackViewModel::updateTrackUiState,
@@ -105,17 +103,17 @@ fun PlayerScreen(
                 .wrapContentHeight()
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.column_and_row_universal_spacedby))
         ) {
 
             TextAndHeart(
-                trackUiState = trackViewModel.trackUiState,
+                trackUiState = trackUiState,
                 changeTrackUiState = trackViewModel::updateTrackUiState,
                 upsertTrack = trackViewModel::upsertTrack
             )
 
             FunctionalBlock(
-                trackUiState = trackViewModel.trackUiState,
+                trackUiState = trackUiState,
                 changeTrackUiState = trackViewModel::updateTrackUiState,
                 upsertTrack = trackViewModel::upsertTrack,
                 saveRepeatMode = trackViewModel::saveRepeatMode,

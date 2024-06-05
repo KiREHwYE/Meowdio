@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -73,7 +74,7 @@ fun TrackItem(
     textTitleSize: TextUnit = 17.sp.nonScaledSp,
     textArtistSize: TextUnit = 13.sp.nonScaledSp,
     startPadding: Dp = 16.dp,
-    heartIconSize: Dp = 24.dp,
+    heartIconSize: Dp = dimensionResource(id = R.dimen.app_universal_icon_size),
     modifier: Modifier = Modifier
 ){
 

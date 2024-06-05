@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.unit.dp
 
 import coil.compose.AsyncImage
 import com.kire.audio.R
@@ -31,7 +30,7 @@ fun ImageCardSide(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner)))
+                .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner)))
         )
     }
 }

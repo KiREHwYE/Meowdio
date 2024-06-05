@@ -8,14 +8,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.unit.dp
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kire.audio.R
@@ -28,12 +26,10 @@ import com.kire.audio.presentation.util.CardFace
 import com.kire.audio.presentation.util.LyricsRequestMode
 
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 @Composable
 fun ImageLyricsFlipBlock(
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     lyricsUiState: StateFlow<LyricsUiState>,
     updateTrackUiState: (TrackUiState) -> Unit,
     updateLyricsUiState: (LyricsUiState) -> Unit,
@@ -41,7 +37,6 @@ fun ImageLyricsFlipBlock(
     getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState
 ){
 
-    val _trackUiState by trackUiState.collectAsStateWithLifecycle()
     val lyricsUiState by lyricsUiState.collectAsStateWithLifecycle()
 
     var cardFace by rememberSaveable {
@@ -49,19 +44,19 @@ fun ImageLyricsFlipBlock(
     }
 
     if (cardFace == CardFace.Back)
-        LaunchedEffect(_trackUiState.currentTrackPlaying?.path) {
-            if (_trackUiState.currentTrackPlaying?.lyrics !is ILyricsRequestState.Success
-                || (_trackUiState.currentTrackPlaying?.lyrics as ILyricsRequestState.Success).lyrics.isEmpty())
+        LaunchedEffect(trackUiState.currentTrackPlaying?.path) {
+            if (trackUiState.currentTrackPlaying?.lyrics !is ILyricsRequestState.Success
+                || trackUiState.currentTrackPlaying?.lyrics.lyrics.isEmpty())
 
-                _trackUiState.currentTrackPlaying?.let { track ->
-                    updateTrackUiState(_trackUiState.copy(currentTrackPlaying = track.copy(lyrics = ILyricsRequestState.OnRequest)))
-                    updateTrackUiState(_trackUiState.copy(
+                trackUiState.currentTrackPlaying?.let { track ->
+                    updateTrackUiState(trackUiState.copy(currentTrackPlaying = track.copy(lyrics = ILyricsRequestState.OnRequest)))
+                    updateTrackUiState(trackUiState.copy(
                         currentTrackPlaying =
                         track.copy(
                             lyrics = getTrackLyricsFromGenius(
                                 LyricsRequestMode.AUTOMATIC,
-                                _trackUiState.currentTrackPlaying!!.title,
-                                _trackUiState.currentTrackPlaying!!.artist,
+                                trackUiState.currentTrackPlaying.title,
+                                trackUiState.currentTrackPlaying.artist,
                                 lyricsUiState.userInput
                             )
                         ).also {
@@ -82,9 +77,9 @@ fun ImageLyricsFlipBlock(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f / 1f)
-            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))),
+            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))),
         front = {
-            ImageCardSide(_trackUiState.currentTrackPlaying?.imageUri)
+            ImageCardSide(trackUiState.currentTrackPlaying?.imageUri)
         },
         back = { graphicModifier ->
 

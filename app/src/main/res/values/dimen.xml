@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="app_horizontal_pad">28dp</dimen>
-    <dimen name="app_rounded_corner">24dp</dimen>
-    <dimen name="list_bottom_pad">28dp</dimen>
+    <dimen name="app_universal_pad">28dp</dimen>
+    <dimen name="app_universal_rounded_corner">24dp</dimen>
+    <dimen name="column_universal_vertical_content_pad">28dp</dimen>
+    <dimen name="app_universal_shadow_elevation">4dp</dimen>
+    <dimen name="app_universal_icon_size">24dp</dimen>
+    <dimen name="column_and_row_universal_spacedby">16dp</dimen>
+    <dimen name="search_list_spacedby">14dp</dimen>
+    <dimen name="sort_and_refresh_bar_spacedby">12dp</dimen>
 </resources>

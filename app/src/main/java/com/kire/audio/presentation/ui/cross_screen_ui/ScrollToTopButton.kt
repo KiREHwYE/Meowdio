@@ -21,10 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kire.audio.R
 import com.kire.audio.presentation.util.bounceClick
@@ -34,7 +32,11 @@ import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 fun ScrollToTopButton(
     showButton: Boolean,
     onClick: () -> Unit,
-    scrollToTopButtonPadding: PaddingValues = PaddingValues(bottom = 128.dp, end = 28.dp)
+    scrollToTopButtonPadding: PaddingValues =
+        PaddingValues(
+            bottom = 128.dp,
+            end = dimensionResource(id = R.dimen.app_universal_pad)
+        )
 ) {
 
     AnimatedVisibility(
@@ -62,7 +64,7 @@ fun ScrollToTopButton(
                     .bounceClick { onClick() }
                     .wrapContentSize()
                     .shadow(
-                        elevation = 5.dp,
+                        elevation = dimensionResource(id = R.dimen.app_universal_shadow_elevation),
                         spotColor = AudioExtendedTheme.extendedColors.shadow,
                         shape = CircleShape
                     )

@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -99,9 +98,9 @@ fun SearchBar(
             Icon(
                 Icons.Rounded.Search,
                 contentDescription = "Search",
+                tint = AudioExtendedTheme.extendedColors.button,
                 modifier = Modifier
-                    .size(24.dp),
-                tint = AudioExtendedTheme.extendedColors.button
+                    .size(dimensionResource(id = R.dimen.app_universal_icon_size))
             )
         },
         trailingIcon = {
@@ -111,7 +110,7 @@ fun SearchBar(
                     contentDescription = "Close",
                     tint = AudioExtendedTheme.extendedColors.button,
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                         .bounceClick {
                             if (searchUiState.searchText.isNotEmpty())
                                 changeSearchUiState(searchUiState.copy(searchText = ""))
@@ -140,9 +139,9 @@ fun SearchBar(
         },
         modifier = modifier
             .shadow(
-                elevation = 5.dp,
+                elevation = dimensionResource(id = R.dimen.app_universal_shadow_elevation),
                 spotColor = AudioExtendedTheme.extendedColors.shadow,
-                shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))
+                shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))
             )
 
     ) {
@@ -158,7 +157,7 @@ fun SearchBar(
                 bottom = 12.dp
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.search_list_spacedby))
         ) {
 
             itemsIndexed(

@@ -1,40 +1,35 @@
 package com.kire.audio.presentation.ui.screen
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material3.Text
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,8 +46,9 @@ import coil.request.ImageRequest
 import com.kire.audio.R
 
 import com.kire.audio.presentation.navigation.transitions.AlbumScreenTransitions
+import com.kire.audio.presentation.ui.album_screen_ui.AlbumScreenHeader
+import com.kire.audio.presentation.ui.album_screen_ui.dialog_album_info.DialogAlbumInfo
 import com.kire.audio.presentation.ui.cross_screen_ui.OnScrollListener
-import com.kire.audio.presentation.ui.cross_screen_ui.ScrollToTopButton
 import com.kire.audio.presentation.ui.list_screen_ui.TrackItem
 import com.kire.audio.presentation.ui.screen.destinations.ListAlbumScreenDestination
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
@@ -61,7 +57,6 @@ import com.kire.audio.presentation.viewmodel.TrackViewModel
 
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Destination(style = AlbumScreenTransitions::class)
@@ -76,6 +71,10 @@ fun AlbumScreen(
     val trackUiState by trackViewModel.trackUiState.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
+
+    var openDialog by remember {
+        mutableStateOf(false)
+    }
 
     OnScrollListener(
         listState = listState,
@@ -98,7 +97,7 @@ fun AlbumScreen(
                 }
             }
             .background(AudioExtendedTheme.extendedColors.background),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy((-24).dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -111,34 +110,33 @@ fun AlbumScreen(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f / 1f)
+                .aspectRatio(1f / 1.2f)
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
-                .weight(1f),
-            verticalArrangement = Arrangement.Top
+                .weight(1f)
+                .fillMaxWidth()
+                .background(
+                    AudioExtendedTheme.extendedColors.background,
+                    RoundedCornerShape(
+                        topStart = dimensionResource(id = R.dimen.app_universal_rounded_corner),
+                        topEnd = dimensionResource(id = R.dimen.app_universal_rounded_corner)
+                    )
+                )
+                .padding(
+                    start = dimensionResource(id = R.dimen.app_universal_pad),
+                    end = dimensionResource(id = R.dimen.app_universal_pad)
+                ),
+            state = listState,
+            contentPadding = PaddingValues(
+                top = dimensionResource(id = R.dimen.column_universal_vertical_content_pad),
+                bottom = dimensionResource(id = R.dimen.column_universal_vertical_content_pad)
+            ),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.column_and_row_universal_spacedby))
         ) {
 
-            Box(
-                modifier = Modifier
-                    .wrapContentHeight()
-                    .fillMaxWidth()
-                    .offset(y = (-24).dp)
-                    .background(
-                        AudioExtendedTheme.extendedColors.background,
-                        RoundedCornerShape(
-                            topStart = dimensionResource(id = R.dimen.app_rounded_corner),
-                            topEnd = dimensionResource(id = R.dimen.app_rounded_corner)
-                        )
-                    )
-                    .padding(
-                        start = dimensionResource(id = R.dimen.app_horizontal_pad),
-                        end = dimensionResource(id = R.dimen.app_horizontal_pad),
-                        top = 28.dp
-                    ),
-                contentAlignment = Alignment.TopStart
-            ) {
+            item {
                 Text(
                     text = albumUiState.tracks[0].album ?: "No album",
                     color = AudioExtendedTheme.extendedColors.primaryText,
@@ -152,38 +150,43 @@ fun AlbumScreen(
                         )
                 )
             }
-
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(
-                        AudioExtendedTheme.extendedColors.background,
-                        RoundedCornerShape(
-                            topStart = dimensionResource(id = R.dimen.app_rounded_corner),
-                            topEnd = dimensionResource(id = R.dimen.app_rounded_corner)
-                        )
-                    )
-                    .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad)),
-                state = listState,
-                contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.list_bottom_pad)),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                itemsIndexed(
-                    albumUiState.tracks,
-                    key = { _, track ->
-                        track.id
-                    }
-                ) { index, track ->
-                    TrackItem(
-                        trackToShow = track,
-                        listINDEX = index,
-                        trackUiState = trackUiState,
-                        updateTrackUiState = trackViewModel::updateTrackUiState,
-                        mediaController = mediaController,
-                        upsertTrack = trackViewModel::upsertTrack
-                    )
+            itemsIndexed(
+                albumUiState.tracks,
+                key = { _, track ->
+                    track.id
                 }
+            ) { index, track ->
+                TrackItem(
+                    trackToShow = track,
+                    listINDEX = index,
+                    trackUiState = trackUiState,
+                    updateTrackUiState = trackViewModel::updateTrackUiState,
+                    mediaController = mediaController,
+                    upsertTrack = trackViewModel::upsertTrack
+                )
             }
         }
+    }
+
+    AlbumScreenHeader(
+        openDialog = {
+            openDialog = true
+        },
+        navigateBack = {
+            navigator.popBackStack()
+        }
+    )
+
+    if (openDialog) {
+        DialogAlbumInfo(
+            albumUiState = albumUiState,
+            trackUiState = trackUiState,
+            updateTrackUiState = trackViewModel::updateTrackUiState,
+            upsertTrack = trackViewModel::upsertTrack,
+            updateArtistWithTracks = trackViewModel::updateArtistWithTracks,
+            updateOpenDialog = {
+                openDialog = false
+            }
+        )
     }
 }

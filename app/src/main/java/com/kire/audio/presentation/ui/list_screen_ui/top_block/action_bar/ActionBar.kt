@@ -9,7 +9,8 @@ import androidx.compose.runtime.Composable
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.dimensionResource
+import com.kire.audio.R
 
 @Composable
 fun ActionBar(
@@ -22,7 +23,7 @@ fun ActionBar(
             .fillMaxWidth()
             .wrapContentHeight(),
         verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.column_and_row_universal_spacedby))
     ) {
 
         sortAndRefreshBar()

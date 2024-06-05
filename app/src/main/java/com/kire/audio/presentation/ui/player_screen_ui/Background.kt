@@ -3,6 +3,8 @@ package com.kire.audio.presentation.ui.player_screen_ui
 import android.content.res.Configuration
 import android.net.Uri
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +35,8 @@ fun Background(
 
     Crossfade(
         targetState = imageUri,
-        label = "Background Image"
+        label = "Background Image",
+        animationSpec = tween(durationMillis = 600, easing = LinearOutSlowInEasing)
     ) {
 
         AsyncImage(

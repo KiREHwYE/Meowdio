@@ -17,14 +17,14 @@ class TrackApplication: Application(), ImageLoaderFactory {
             .memoryCachePolicy(CachePolicy.ENABLED)
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(0.1)
+                    .maxSizePercent(0.01)
                     .strongReferencesEnabled(true)
                     .build()
             }
             .diskCachePolicy(CachePolicy.ENABLED)
             .diskCache {
                 DiskCache.Builder()
-                    .maxSizePercent(0.03)
+                    .maxSizePercent(0.01)
                     .directory(cacheDir)
                     .build()
             }

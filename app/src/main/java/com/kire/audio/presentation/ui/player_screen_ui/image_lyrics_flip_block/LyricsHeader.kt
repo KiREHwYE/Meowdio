@@ -27,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +53,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LyricsHeader(
     upsertTrack: suspend (Track) -> Unit,
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     clearUserInput: () -> Unit,
     lyricsRequest: (LyricsRequestMode) -> Unit,
     lyricsUiState: LyricsUiState,
@@ -60,15 +61,13 @@ fun LyricsHeader(
     updateLyricsUiState: (LyricsUiState) -> Unit
 ) {
 
-    val trackUiState by trackUiState.collectAsStateWithLifecycle()
-
     val coroutineScope = rememberCoroutineScope()
 
     lyricsUiState.apply {
 
         Column(
             modifier = Modifier
-                .padding(top = 28.dp)
+                .padding(top = dimensionResource(id = R.dimen.app_universal_pad))
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -83,13 +82,13 @@ fun LyricsHeader(
 
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                 ) {
 
                     if (isEditModeEnabled && lyricsRequestMode == LyricsRequestMode.EDIT_CURRENT_TEXT)
                         Icon(
                             imageVector = Icons.Rounded.Delete,
-                            contentDescription = "",
+                            contentDescription = "Delete",
                             tint = AudioExtendedTheme.extendedColors.orangeAccents,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -100,7 +99,7 @@ fun LyricsHeader(
                     else if (lyricsRequestMode != LyricsRequestMode.SELECTOR_IS_VISIBLE && trackUiState.currentTrackPlaying?.lyrics is ILyricsRequestState.Unsuccessful) {
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
-                            contentDescription = "",
+                            contentDescription = "Refresh",
                             tint = AudioExtendedTheme.extendedColors.orangeAccents,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -124,15 +123,15 @@ fun LyricsHeader(
                     contentDescription = "",
                     tint = AudioExtendedTheme.extendedColors.orangeAccents,
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                         .bounceClick {
                             updateLyricsUiState(
                                 this@apply.copy(
                                     lyricsRequestMode =
-                                        if (!isEditModeEnabled)
-                                            LyricsRequestMode.SELECTOR_IS_VISIBLE
-                                        else
-                                            LyricsRequestMode.AUTOMATIC,
+                                    if (!isEditModeEnabled)
+                                        LyricsRequestMode.SELECTOR_IS_VISIBLE
+                                    else
+                                        LyricsRequestMode.AUTOMATIC,
                                     isEditModeEnabled = !isEditModeEnabled
                                         .also {
 
@@ -172,7 +171,7 @@ fun LyricsHeader(
                 modifier = Modifier
                     .fillMaxWidth(0.25f)
                     .clip(
-                        RoundedCornerShape(28.dp)
+                        RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))
                     ),
                 thickness = 4.dp,
                 color = AudioExtendedTheme.extendedColors.divider

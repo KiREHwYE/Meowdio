@@ -123,14 +123,14 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 withContext(Dispatchers.IO){
 
-//                    launch {
-//                        MediaCommands.isPlayRequired.collect {
-//                            trackViewModel.updateTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
-//                        }
-//                    }
+                    launch {
+                        MediaCommands.isPlayRequired.collect {
+                            trackViewModel.updateTrackUiState(trackUiState = trackViewModel.trackUiState.value.copy(isPlaying = it))
+                        }
+                    }
                     launch {
                         MediaCommands.isPreviousTrackRequired.collect {
                             if (it)

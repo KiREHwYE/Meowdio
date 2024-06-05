@@ -15,7 +15,6 @@ import androidx.navigation.NavHostController
 import com.kire.audio.device.audio.media_controller.skipTrack
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
-import com.kire.audio.presentation.ui.list_screen_ui.PlayerBottomFloatingCard
 import com.kire.audio.presentation.ui.screen.destinations.PlayerScreenDestination
 import com.kire.audio.presentation.util.ListSelector
 import com.ramcosta.composedestinations.navigation.navigate

@@ -21,12 +21,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.dimensionResource
+import com.kire.audio.R
 
 import com.kire.audio.presentation.util.bounceClick
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
-import com.kire.audio.presentation.ui.player_screen_ui.dialog_block.DialogInfo
+import com.kire.audio.presentation.ui.player_screen_ui.dialog.dialog_info.DialogInfo
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 
 @Composable
@@ -53,7 +54,7 @@ fun Header(
             Icons.Rounded.KeyboardArrowDown,
             contentDescription = "Close",
             modifier = Modifier
-                .size(30.dp)
+                .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                 .alpha(0.8f)
                 .bounceClick {
                     navigateBack()
@@ -65,7 +66,7 @@ fun Header(
             Icons.Rounded.MoreVert,
             contentDescription = "Info",
             modifier = Modifier
-                .size(30.dp)
+                .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                 .alpha(0.8f)
                 .bounceClick {
                     openDialog = !openDialog

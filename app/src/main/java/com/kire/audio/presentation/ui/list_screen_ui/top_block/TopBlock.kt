@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
 import com.kire.audio.R
 import com.kire.audio.presentation.ui.list_screen_ui.top_block.action_bar.ActionBar
-import com.kire.audio.presentation.ui.list_screen_ui.top_block.action_bar.DropDownMenu
+import com.kire.audio.presentation.ui.list_screen_ui.top_block.action_bar.dropdown_menu.DropDownMenu
 import com.kire.audio.presentation.ui.list_screen_ui.top_block.action_bar.SearchBar
 import com.kire.audio.presentation.ui.list_screen_ui.top_block.action_bar.SortAndRefreshBar
 
@@ -27,6 +27,7 @@ fun TopBlock(
     onTitleClick: () -> Unit,
     mediaController: MediaController?
 ){
+
     Column(
         modifier = Modifier
             .padding(bottom = 16.dp)
@@ -46,8 +47,10 @@ fun TopBlock(
             sortAndRefreshBar = {
                 SortAndRefreshBar(
                     refreshAction = trackViewModel::updateTrackDataBase,
-                    dropDownMenu = {
+                    dropDownMenu = { isExpanded, onDismiss ->
                         DropDownMenu(
+                            isExpanded = isExpanded,
+                            onDismiss = onDismiss,
                             sortType = trackViewModel.sortType,
                             saveSortOption = trackViewModel::saveSortOption,
                             onEvent = trackViewModel::updateSortOption,

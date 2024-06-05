@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kire.audio.R
 
 import com.kire.audio.presentation.model.ILyricsRequestState
@@ -31,12 +30,11 @@ import com.kire.audio.presentation.model.TrackUiState
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 import com.kire.audio.presentation.util.LyricsRequestMode
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun LyricsCardSide(
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     lyricsUiState: LyricsUiState,
     updateTrackUiState: (TrackUiState) -> Unit,
     updateLyricsUiState: (LyricsUiState) -> Unit,
@@ -44,8 +42,6 @@ fun LyricsCardSide(
     getTrackLyricsFromGenius: suspend (LyricsRequestMode, String?, String?, String?) -> ILyricsRequestState,
     modifier: Modifier
 ) {
-
-    val _trackUiState by trackUiState.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -58,27 +54,26 @@ fun LyricsCardSide(
         val lyricsRequest: (lyricsRequestMode: LyricsRequestMode) -> Unit = {
 
             coroutineScope.launch(Dispatchers.IO) {
-                    _trackUiState.currentTrackPlaying?.copy(lyrics = ILyricsRequestState.OnRequest)
+                trackUiState.currentTrackPlaying?.copy(lyrics = ILyricsRequestState.OnRequest)
                         .also { track ->
                             updateTrackUiState(
-                                _trackUiState.copy(
+                                trackUiState.copy(
                                     currentTrackPlaying = track
                                 )
                             )
                         }?.let { track -> upsertTrack(track) }
 
-
-                    _trackUiState.currentTrackPlaying?.copy(
+                trackUiState.currentTrackPlaying?.copy(
                         lyrics =
                         getTrackLyricsFromGenius(
                             lyricsRequestMode,
-                            _trackUiState.currentTrackPlaying!!.title,
-                            _trackUiState.currentTrackPlaying!!.artist,
+                            trackUiState.currentTrackPlaying.title,
+                            trackUiState.currentTrackPlaying.artist,
                             userInput
                         )
                     ).also { track ->
                         updateTrackUiState(
-                            _trackUiState.copy(
+                            trackUiState.copy(
                                 currentTrackPlaying = track
                             )
                         )
@@ -103,23 +98,24 @@ fun LyricsCardSide(
                 .fillMaxSize()
                 .background(
                     color = AudioExtendedTheme.extendedColors.controlElementsBackground,
-                    shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))
+                    shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))
                 )
                 .verticalScroll(rememberScrollState())
                 .padding(
                     start = 32.dp,
                     end = 32.dp,
                     bottom =
-                    if (!isEditModeEnabled && _trackUiState.currentTrackPlaying?.lyrics is ILyricsRequestState.OnRequest
-                        || lyricsRequestMode == LyricsRequestMode.SELECTOR_IS_VISIBLE)
+                    if (!isEditModeEnabled && trackUiState.currentTrackPlaying?.lyrics is ILyricsRequestState.OnRequest
+                        || lyricsRequestMode == LyricsRequestMode.SELECTOR_IS_VISIBLE
+                    )
                         0.dp
-                    else 28.dp
+                    else dimensionResource(id = R.dimen.app_universal_pad)
                 ),
             verticalArrangement =
                 Arrangement.spacedBy(
-                    if (!isEditModeEnabled && _trackUiState.currentTrackPlaying?.lyrics is ILyricsRequestState.OnRequest)
+                    if (!isEditModeEnabled && trackUiState.currentTrackPlaying?.lyrics is ILyricsRequestState.OnRequest)
                         0.dp
-                    else 28.dp
+                    else dimensionResource(id = R.dimen.app_universal_pad)
                 ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -152,7 +148,7 @@ fun LyricsCardSide(
                 LyricsPickedEditOption(
                     isClearNeeded = isClearNeeded,
                     lyricsRequestMode = lyricsRequestMode,
-                    lyrics = _trackUiState.currentTrackPlaying?.lyrics ?: ILyricsRequestState.OnRequest,
+                    lyrics = trackUiState.currentTrackPlaying?.lyrics ?: ILyricsRequestState.OnRequest,
                     updateUserInput = {
                         updateLyricsUiState(lyricsUiState.copy(userInput = it))
                     },
@@ -164,7 +160,7 @@ fun LyricsCardSide(
 
             if (!isEditModeEnabled && lyricsRequestMode != LyricsRequestMode.SELECTOR_IS_VISIBLE)
                 LyricsResult(
-                    lyrics = _trackUiState.currentTrackPlaying?.lyrics ?: ILyricsRequestState.OnRequest,
+                    lyrics = trackUiState.currentTrackPlaying?.lyrics ?: ILyricsRequestState.OnRequest,
                     modifier = Modifier
                         .weight(1f)
                 )

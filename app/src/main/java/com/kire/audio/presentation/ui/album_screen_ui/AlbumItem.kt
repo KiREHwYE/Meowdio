@@ -23,11 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -61,7 +58,7 @@ fun AlbumItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner)))
+            .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner)))
             .background(AudioExtendedTheme.extendedColors.background)
             .padding(12.dp)
     ) {
@@ -80,13 +77,13 @@ fun AlbumItem(
                 contentDescription = "Album Image",
                 modifier = Modifier
                     .shadow(
-                        elevation = 4.dp,
+                        elevation = dimensionResource(id = R.dimen.app_universal_shadow_elevation),
                         spotColor = AudioExtendedTheme.extendedColors.shadow,
-                        shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))
+                        shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))
                     )
                     .weight(1f)
                     .aspectRatio(1f / 1f)
-                    .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner)))
+                    .clip(RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner)))
                     .pointerInput(Unit) {
                         detectTapGestures {
                             onImageClick()
@@ -101,7 +98,7 @@ fun AlbumItem(
                     .aspectRatio(1f / 1f),
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                contentPadding = PaddingValues(bottom = 8.dp)
+                contentPadding = PaddingValues(bottom = 12.dp)
             ) {
                 itemsIndexed(
                     tracks,
@@ -122,9 +119,9 @@ fun AlbumItem(
                         startPadding = 0.dp,
                         modifier = Modifier
                             .shadow(
-                                elevation = 4.dp,
+                                elevation = dimensionResource(id = R.dimen.app_universal_shadow_elevation),
                                 spotColor = AudioExtendedTheme.extendedColors.shadow,
-                                shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_rounded_corner))
+                                shape = RoundedCornerShape(dimensionResource(id = R.dimen.app_universal_rounded_corner))
                             )
                             .clip(RoundedCornerShape(24.dp))
                             .background(AudioExtendedTheme.extendedColors.controlElementsBackground)

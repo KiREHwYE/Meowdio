@@ -1,12 +1,6 @@
 package com.kire.audio.presentation.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -105,10 +99,10 @@ fun ListScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(color = AudioExtendedTheme.extendedColors.background)
-            .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad)),
-        contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.list_bottom_pad)),
+            .padding(horizontal = dimensionResource(id = R.dimen.app_universal_pad)),
+        contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.column_universal_vertical_content_pad)),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.column_and_row_universal_spacedby)),
     ) {
 
         item {
@@ -117,6 +111,7 @@ fun ListScreen(
                 trackViewModel = trackViewModel,
                 onTitleClick = {
                     navigator.navigate(ListAlbumScreenDestination)
+                    trackViewModel.updateArtistWithTracks()
                 },
                 mediaController = mediaController
             )

@@ -77,7 +77,7 @@ fun ListAlbumScreen(
     val widthDP = configuration.screenWidthDp
     val blockWidth = widthDP / 2
 
-    val albumsWithTracks = trackViewModel.artistWithTracks
+    val albumsWithTracks by trackViewModel.artistWithTracks.collectAsStateWithLifecycle()
     val albums = albumsWithTracks.keys.toList()
 
     OnScrollListener(
@@ -100,7 +100,7 @@ fun ListAlbumScreen(
                         navigator.popBackStack(AlbumScreenDestination.route, inclusive = true)
                 }
             }
-            .padding(horizontal = dimensionResource(id = R.dimen.app_horizontal_pad)),
+            .padding(horizontal = dimensionResource(id = R.dimen.app_universal_pad)),
         contentAlignment = Alignment.Center
     ) {
 
@@ -113,8 +113,8 @@ fun ListAlbumScreen(
             state = listState,
             modifier = Modifier
                 .fillMaxSize(),
-            contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.list_bottom_pad)),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(bottom = dimensionResource(id = R.dimen.column_universal_vertical_content_pad)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.column_and_row_universal_spacedby))
         ) {
 
             item {
@@ -136,7 +136,7 @@ fun ListAlbumScreen(
                     mediaController = mediaController,
                     onImageClick = {
                         navigator.navigate(AlbumScreenDestination())
-                        trackViewModel.updateAlbumUiState(albumUiState.copy(tracks = albumsWithTracks[album] ?: emptyList()))
+                        trackViewModel.updateAlbumUiState(albumUiState.copy(tracks = albumsWithTracks[album] ?: emptyList(), albumTitle = album))
                     }
                 )
             }

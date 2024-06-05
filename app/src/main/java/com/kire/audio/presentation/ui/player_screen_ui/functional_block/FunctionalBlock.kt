@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun FunctionalBlock(
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
     skipTrack: (SkipTrackAction) -> Unit,

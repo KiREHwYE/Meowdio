@@ -19,9 +19,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.session.MediaController
 import com.kire.audio.R
 import com.kire.audio.device.audio.util.RepeatMode
@@ -29,14 +29,14 @@ import com.kire.audio.device.audio.util.SkipTrackAction
 import com.kire.audio.presentation.util.bounceClick
 import com.kire.audio.presentation.model.Track
 import com.kire.audio.presentation.model.TrackUiState
-import com.kire.audio.presentation.ui.player_screen_ui.dialog_block.DialogFavourite
+import com.kire.audio.presentation.ui.player_screen_ui.dialog.DialogFavourite
 import com.kire.audio.presentation.ui.theme.AudioExtendedTheme
 import com.kire.audio.presentation.util.ListSelector
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun ControlBlock(
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
     skipTrack: (SkipTrackAction) -> Unit,
@@ -45,8 +45,6 @@ fun ControlBlock(
     selectListOfTracks: (ListSelector) -> StateFlow<List<Track>>,
     play: () -> Unit
 ) {
-
-    val trackUiState by trackUiState.collectAsStateWithLifecycle()
 
     var openDialog by remember {
         mutableStateOf(false)
@@ -95,7 +93,7 @@ fun ControlBlock(
                 contentDescription = "Previous",
                 tint = AudioExtendedTheme.extendedColors.playerScreenButton,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                     .alpha(0.78f)
                     .bounceClick {
                         skipTrack(SkipTrackAction.PREVIOUS)
@@ -124,7 +122,7 @@ fun ControlBlock(
                 contentDescription = "Next",
                 tint = AudioExtendedTheme.extendedColors.playerScreenButton,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(dimensionResource(id = R.dimen.app_universal_icon_size))
                     .alpha(0.78f)
                     .bounceClick {
                         skipTrack(SkipTrackAction.NEXT)

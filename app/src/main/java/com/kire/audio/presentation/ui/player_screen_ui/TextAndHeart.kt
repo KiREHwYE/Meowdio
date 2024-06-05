@@ -45,13 +45,11 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TextAndHeart(
-    trackUiState: StateFlow<TrackUiState>,
+    trackUiState: TrackUiState,
     changeTrackUiState: (TrackUiState) -> Unit,
     upsertTrack: suspend (Track) -> Unit,
 ){
     val coroutineScope = rememberCoroutineScope()
-
-    val trackUiState by trackUiState.collectAsStateWithLifecycle()
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -65,8 +63,7 @@ fun TextAndHeart(
                 .wrapContentHeight()
                 .weight(1f)
                 .padding(end = 32.dp),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            horizontalAlignment = Alignment.Start
         ) {
 
             Text(
